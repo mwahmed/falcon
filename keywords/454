@@ -1,0 +1,63 @@
+ECE454H1F Computer Systems Programming – Fall 2013
+Overview
+This course goes beyond prior programming courses to teach students to better understand computer
+hardware, operating systems, and compilers from a programmer's perspective. In particular this
+course leverages this improved understanding to allow students to program for good performance.
+Students will learn how to measure and understand program execution and behavior, how to get the
+most out of an optimizing compiler, how memory is allocated and managed, and how to exploit
+caches and the memory hierarchy. Furthermore, students will learn about current trends in multicore,
+multithreaded, and data parallel hardware, how to exploit parallelism in their programs, the
+fundamentals of parallel architectures and synchronization techniques, and the recent trend of
+distributed data analytics (e.g., big data analytics)---these latter topics are relatively new to
+undergraduate curricula and in increasing demand in industry. Students will get hands-on experience
+with most topics through programming assignments.
+Course Website
+Please login to the University’s Portal and then select
+COMPUTER SYSTEMS PROGRAMMING
+Optional Textbook (not required)
+1. Computer Systems: A Programmer's Perspective, Randal E. Bryant and David R.
+O'Hallaron. Prentice Hall, 2003, ISBN 0-13-034074-X.
+Evaluation Scheme
+1
+2
+3
+Percentage
+35%
+25%
+40%
+Component
+Labs
+Midterm Exam
+Final Exam
+Homework breakdown:
+15% HW1
+20% HW2
+25% HW3
+20% HW4
+20% HW5
+Course Outline
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+Introduction
+CPU Architecture
+Profiling
+Compilers and Optimizations
+Static Memory
+Memory Performance
+Dynamic Memory
+Parallel Architecture
+Threads and Synchronization
+Parallelization
+Big data analytics & cloud computing
+Industrial guest lectures
+
