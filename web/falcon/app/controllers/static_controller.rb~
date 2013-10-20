@@ -1,0 +1,25 @@
+class StaticController < ApplicationController
+
+	def basic
+
+	end
+
+	def index
+
+	end
+
+	def file
+		p "in controller"
+		p params
+	  request.raw_post
+
+
+
+	file = File.new("/tmp/audio/test.wav", "w+b")
+	file.write request.env["rack.input"].read
+	file.close
+		render json: params
+	end
+
+
+end
