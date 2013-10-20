@@ -44,7 +44,7 @@ text-align: center;
 
 a{
 	text-decoration:none;
-	color:#463E3F;
+	color:		#FFF5EE;
 }
 
 #footer {

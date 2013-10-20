@@ -7,37 +7,48 @@
 
 <!-- Setup the recorder interface -->
 <%=javascript_include_tag "recorder" %>
+<%=javascript_include_tag "gui" %>
+<%=javascript_include_tag "jquery" %>
 <script>
+
 	function setup() {
 		Wami.setup("wami");
 	}
 	
 	function record() {
-		status("Recording...");
+		//status("Recording...");
 		Wami.startRecording("/file?filemame=test.wav");
 	}
 
 	function play() {
-		Wami.startPlaying("https://wami-recorder.appspot.com/audio");
+		Wami.startPlaying("/test.wav");
+		status("");
 	}
 
 	function stop() {
-		status("");
+		//status("");
 		Wami.stopRecording();
 		Wami.stopPlaying();
 	}
 
 	function status(msg) {
-		document.getElementById('status').innerHTML = msg;
+		$('#status1').hide();
 	}
 </script>
 </head>
 
 <body onload="setup()">
-	<input type="button" value="Record" onclick="record()"></input>
-	<input type="button" value="Stop" onclick="stop()"></input>
-	<input type="button" value="Play" onclick="play()"></input>
-	<div id="status"></div>
+	<input type="image" Title="Record" alt="Record" src="/assets/record.png" onclick="record();$('#status').show()"></input>
+	<input type="image" Title="Stop" alt="Stop" src="/assets/stop.png" onclick="stop();$('#status').hide();$('#status1').hide()"></input>
+	<input type="image" Title="Play" alt="Play" src="/assets/play.png" onclick="play();$('#status1').show()"></input>
+	<br/>
+	<div id="status" style="display:none">
+		<h2> <input type="image" src="/assets/microphone.png"> Recording ...</input> </h2>
+	</div>
+
+	<div id="status1" style="display:none">
+		<h2> <input type="image" src="/assets/volume.png"> Playing ...</input> </h2>
+	</div>
 	<div id="wami"></div>
 </body>
 </html>

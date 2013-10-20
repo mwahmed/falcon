@@ -3,10 +3,29 @@
 <head>
   <title>Falcon</title>
   <%= stylesheet_link_tag    "application", :media => "all" %>
+  <%= csrf_meta_tags %>
 </head>
 <body>
 
-<%= yield %>
+	<div id="container">
+		<div id="header">
+			<h1> ECE 496 </h1>
+		</div>
+		<div id="content">
 
+			<%= yield %>
+		</div>
+
+		<div id="footer">
+			<p>Recording performed by <a href="http://wami.csail.mit.edu/">Web-Accessible Multimodal Interface (WAMI)</a> </p>
+		</div>
+
+	</div>
 </body>
 </html>
+
+
+
+   
+   
+</div>

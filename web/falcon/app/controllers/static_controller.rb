@@ -15,10 +15,15 @@ class StaticController < ApplicationController
 
 
 
-	file = File.new("/tmp/audio/test.flac", "w+b")
+	file = File.new("public/test.wav", "w+b")
 	file.write request.raw_post
 	file.close
-		render json: params
+		
+	file = File.new("public/test.flac", "w+b")
+	file.write request.raw_post
+	file.close
+		
+	render json: params
 	end
 
 
