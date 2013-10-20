@@ -15,7 +15,7 @@ class StaticController < ApplicationController
 
 
 
-	file = File.new("/tmp/audio/test.wav", "w+b")
+	file = File.new("/tmp/audio/test.flac", "w+b")
 	file.write request.raw_post
 	file.close
 		render json: params
