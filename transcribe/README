@@ -1,0 +1,6 @@
+README
+
+'transcribe' calls all the intermediate parts
+'prepro.py' does pre-processing
+
+Eventually should move to a configuration file of sorts
