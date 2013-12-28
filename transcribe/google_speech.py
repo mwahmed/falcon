@@ -5,25 +5,42 @@ import os
 import glob
 import subprocess
 
-def print_list(arr):
-     for a in arr:
-         print a
+"""
+Helper function- prints list
+@params
+    lst - list to be printed
+"""
+def print_list(lst):
+    for l in lst: print l
 
+"""
+Performs transcription of audio file
+    Does not require API key. Only works
+    for files less than 5s
+@params 
+    filename- path to input audio file  
+@ret= transcription
+"""
 def keyless_trans(filename):
-    #Test keyless google speech api
-    audiofile = filename #sys.argv[1]
+    audiofile = filename 
     transcript1=None
     with open(audiofile, "r") as audio:
-          try: 
-	      transcript1 = speech.speech_to_text(audio, '44100')
-	  except:
-	      print "error processing above file (keyless transcription)"
-	      return None
-    return transcript1 
+        try: 
+            transcript = speech.speech_to_text(audio, ut.file_sampfreq(audio))
+        except:
+            print "error processing above file (keyless transcription)"
+            return None
+    return transcript 
 
 
+"""
+Performs transcription of audio file
+    Requires API key. 
+@params 
+    filename- path to input audio file  
+@ret= transcription
+"""
 def key_trans(filepath): 
-    #Test keyless google speech api
     speech_obj = speech_key.google_stt_stream(filepath)
     speech_obj.start()
     speech_obj.stop()
@@ -31,13 +48,9 @@ def key_trans(filepath):
     return speech_obj.output 
 
 if __name__ == "__main__":
-    #path_to_audio="../../audiosamples/"
-    #for f in os.listdir(path_to_audio):
     if len(sys.argv) == 2:
         print key_trans(sys.argv[1])
-        print_list(keyless_trans(sys.argv[1]))
     else:
-        lst =  glob.glob("*flac")
-        for f in lst:
-        	print key_trans(sys.argv[1])
-        	print_list(keyless_trans(sys.argv[1]))
+        print "Invalid number of arguments passed"
+        raise Exception       
+

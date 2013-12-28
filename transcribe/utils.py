@@ -3,10 +3,99 @@
 #Contains utility functions
 import subprocess
 import re
+import ConfigParser as confpar
+import os
+import glob
+
 """
+[GLOBALS]
+"""
+"""
+Location of configuration file
+"""
+CFG_FILE_LOC="./transcribe.conf"
+CFG_FILE_SEC="main"
+
+"""
+[CONFIGURATION FILE]
+"""
+"""
+Returns whether debug flag is set
+@ret=Boolean value of debug flag 
+    from conf file
+"""
+def get_debug():
+    cp = confpar.ConfigParser() 
+    cp.read(CFG_FILE_LOC)
+    return cp.getboolean(CFG_FILE_SEC, "debug")
+
+"""
+Returns dictionary of conf params in conf file
+@ret=dictionary of param name to value from conf file
+"""
+def get_cfg_params():
+    cp = confpar.ConfigParser() 
+    cp.read(CFG_FILE_LOC)
+    opts = cp.options(CFG_FILE_SEC)
+    return { p: cp.get(CFG_FILE_SEC, p) for p in opts}
+
+"""
+[GENERAL FILE MANAGEMENT/INFO]
+"""
+"""
+Returns the base file name, 
+    does not work properly for
+    cases where extensions has '.' 
+    in it, i.e. "tar.gz"
+@ret= basefile path
+@params
+    filepath - the filepath
+"""
+def base_filename(filepath):
+    ret = filepath.split("/")[-1]
+    ret = ret.split(".")[:-1]
+    return ".".join(ret)
+
+"""
+Returns filepath and filename
+@ret= returns tuple of path and filename
+Note: filepath may not exist
+"""
+def split_path(path):
+    #path is the filename
+    if "/" not in path: return(None, path)
+    #path is path to directory
+    if os.path.isdir(path): 
+        if path[-1] == "/": path=path[:-1]
+        return(path, None)        
+    return os.path.split(path)
+    
+"""
+Removes all matching files from given dir
+"""
+def remove_seg_files(drct, pattern):
+    cwd = os.getcwd()
+    os.chdir(drct)
+    filelist = glob.glob(pattern)
+    for f in filelist:
+        os.remove(f)
+    os.chdir(cwd)
+
+"""
+@ret= returns directory path with '/' appended
+"""
+def dir_path(path):
+    if path[-1] != "/": path+="/"
+    return path   
+
+"""
+[AUDIO FILE]
+"""    
+"""
+Returns the file length in seconds
 @ret= length of file in seconds
 @params
-	filepath- path to file
+    filepath- path to file
 """
 def file_length(filepath):
     p=subprocess.Popen(["sox", filepath, "-n", "stat"], stderr=subprocess.PIPE)
@@ -16,9 +105,10 @@ def file_length(filepath):
     return float(length)
 
 """
-@ret= sampling frequency of file
+Returns sampling frequency of file
+@ret= sampling frequency of file in Hz
 @params
-	filepath- path to file
+    filepath- path to file
 """
 def file_sampfreq(filepath):
     p=subprocess.Popen(["sox", "--i", filepath], stdout=subprocess.PIPE)
@@ -26,69 +116,56 @@ def file_sampfreq(filepath):
     stats=out.split("\n")
     samp_freq = [ s for s in stats if "Sample Rate" in s ][0].split(" ")[-1]
     return int(samp_freq)
-
-"""
-@ret=return number N corresponding to time t
-@params
-  t - time in seconds
-  samp_freq-sampling frequency in Hz
-"""
-def time_to_sample(t, samp_freq):
-    return t*samp_freq
-
-"""
-Returns the base file name, 
-    does not work properly for
-    cases where extensions has '.' 
-    in it, i.e. "tar.gz"
-@ret=returns the basefile path
-@params
-    filepath - the filepath
-"""
-def base_filename(filepath):
-    ret = filepath.split("/")[-1]
-    ret = ret.split(".")[:-1]
-    return ".".join(ret)
+     
 """
 Plots audio file
 @params
-	audio- nparray		
-"""		    
+    audio- nparray      
+"""         
 def plot(audio):
-	plt.plot(audio.transpose())
-	plt.show()
+    plt.plot(audio.transpose())
+    plt.show()
 
 """
 Plays given file
 @params
-	audio- np array representing file
-	fs- sampling frequency
+    audio- np array representing file
+    samp_freq- sampling frequency
 """
-def play(audio, samp_freq=44100):
-	try:
-		sa.play( audio, fs=samp_freq)
-	except Exception as e:
-		print "Exception thrown : {}".format(e)
-		
+def play(audio):
+    try:
+        sa.play( audio, fs=file_sampfreq(audio))
+    except Exception as e:
+        print "Exception thrown : {}".format(e)
+        
 """
-Plays audio file from given bounds, i.e. start and end indices
-"""
-def play_seg(audio, bounds, samp_freq=44100):
-	start = bounds[0]
-	end = bounds[1]
-	play(audio[:, start:end], samp_freq)
-
-
-"""
-returns index of value
+Plays audio file from given bounds
 @params
-	value is the value being searched
-	srt_indx is the list of sorted indices
-	vect is the unsorted list
-	srt_fnc is the comparison function
-		== 'gt' : returns index of value greater than 'value' if value DNE
-		== 'ln' : returns index of value less than 'value' if value DNE
-		== None : returns only index of value
+    audio- np array representing audio file
+    bounds- tuple representing start and end indices
+        in audio array
+    samp_freq- sampling frequency 
+"""
+def play_seg(audio, bounds):
+    start = bounds[0]
+    end = bounds[1]
+    #FIX: This will only work if audio has 2 channels
+    play(audio[:, start:end])
+
+"""
+[MISC]
+"""
+"""
+returns index of value, or index of 
+    closest value if no exact match
+@params
+    value is the value being searched
+    srt_indx is the list of sorted indices
+    vect is the unsorted list
+    srt_fnc is the comparison function
+        == 'gt' : returns index of value greater than 'value' if value DNE
+        == 'ln' : returns index of value less than 'value' if value DNE
+        == None : returns only index of value
 """
 def binsrc(value, srt_indx, vect, src_fnc=None):
 
@@ -119,6 +196,6 @@ def binsrc(value, srt_indx, vect, src_fnc=None):
                     return mid             
             low = mid + 1
         else: #if vect[srt_indx[mid]] == value: 
-        	return mid
+            return mid
     return -1
 

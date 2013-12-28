@@ -1,3 +1,5 @@
+#!/bin/python
+
 import google_speech as gs
 import prepro as pp
 import sys
@@ -5,122 +7,103 @@ import re
 import os
 import glob
 import utils as ut
+import argparse as ap
 
-DEBUG = 1
+DEBUG = ut.get_debug()
 
-#TODO: Store the following info in a conf file
-#TODO: move some stuff to a utils module
-#Default dir to look for audio files
-DEFAULT_DIR = "../sample_audio"
-#default dir for audio segment files
-OUTPATH = "./seg_audio"
+"""
+Parses command line args and returns 
+    list of parameters
+@ret= List of paths to input file,
+    output summary file, and segment directory
+"""
+def parse_args():    
+    parser = ap.ArgumentParser()
+    parser.add_argument("filepath", help="path to input audio file")
+    parser.add_argument("-i", "--indir", help="directory containing input audio file, if filepath does not contain path")
+    parser.add_argument("-d", "--debug", help="enble debugging output", type=bool)
+    parser.add_argument("-s", "--sumpath", help="path to summary file. Can either be file or dir. If dir, summary file stored in dir/basefilename.txt")
+    parser.add_argument("-f", "--segdir", help="directory to store temporary audio seg/frag-ment files")
+    args = parser.parse_args()
+    
+    cfg_params = ut.get_cfg_params()
+    
+    filepath=""
+    sumpath=""
+    segdir=""
+    
+    #Get the input file path
+    drct, fl = ut.split_path(args.filepath)
+    if not drct:
+        if args.indir and not os.path.isdir(args.indir):
+            print "Invalid input directory specified"
+            raise Exception
+    if not fl:
+        print "Invalid input file specified"
+        raise Exception
+    filepath = ut.dir_path( args.indir or cfg_params["in_dir"] ) + fl
+    if not os.path.exists(filepath):
+        print "Input file not found"
+        raise Exception    
+    
+    #Get summary file path    
+    if args.sumpath:
+        drct, fl = ut.split_path(args.sumpath)
+        if drct and fl: sumpath = args.sumpath
+        elif drct:
+            sumpath = ut.dir_path(drct) + ut.base_filename(filepath)
+        elif fl: 
+            sumpath = ut.dir_path(cfg_params["summary_dir"]) + fl
+        else:
+            print "Invalid summary path specified"
+            raise Exception
+    else:
+         sumpath = ut.dir_path(cfg_params["summary_dir"]) + ut.base_filename(filepath)
+    #Append extension
+    if sumpath[-5:] != ".smry" : sumpath += ".smry"
+    
+    #Get segment directory path           
+    if args.segdir and not os.path.isdir(args.segdir):
+        print "Invalid segment file directory specified"
+        raise Exception
+    segdir = ut.dir_path(args.segdir or cfg_params["seg_file_dir"])  
+    
+    #Set Debug flag
+    if args.debug:
+        DEBUG = args.debug 
+    
+    return (filepath, sumpath, segdir)
 
-SUMMARY_DIR = "../summary"
+"""
+Transcribes the audio at filepatha
+@params
+    filepath - the path to the audio file
+        to be transcribed
+    sumpath - path to file to write summary in
+    segdir - directory to store temporary segment files
+"""    
+def transcribe(filepath, sumpath, segdir):
+    if DEBUG: print "filepath= {}, sumpath= {}, segdir= {}".format(filepath, sumpath, segdir)
+    if DEBUG: print "File length = {}".format(ut.file_length(filepath))     
+        
+    #Writes all segment files to segdir
+    seg_count = pp.prepro2(filepath, segdir)           
+    
+    basefile = ut.base_filename(filepath)       
+    if DEBUG: print "basefile is {}".format(basefile)
+    
+    sf = open(sumpath, "w")
+    #Consider using #while os.path.exists(opath): 
+    segfiles = (ut.dir_path(segdir) + basefile + "__" + str(i) + ".flac" for i in range(seg_count))    
+    for seg in segfiles:     
+        if DEBUG: print "segment path is {}".format(seg)
+        trans = gs.key_trans(seg)
+        sf.write(trans + "\n")
+        if DEBUG: print(trans)         
+    
+    sf.close()
+    ut.remove_seg_files(segdir, basefile + "__*.flac")
 
-#Returns filepath if valid argument passed
-#else raises an Exception
-def parse_args(sys):
-	#should be called with one argument, the audio file 
-	if len(sys.argv) != 2:
-		print "Invalid number of arguments. Call with filepath only"
-		raise Exception
-	
-	filepath = sys.argv[1]
-	#Check file extension is .flac
-	if len(filepath) < 4 or filepath[-4:] != "flac":
-		print "Invalid filename..."
-		raise Exception
-	
-	#Accepts unqualified filename
-	# in this case look in default dir 
-	if "/" not in filepath:	
-		fpath = DEFAULT_DIR + "/" + filepath
-		if not os.path.exists(fpath):
-			"{} does not exist in default dir; specify full path".format(filepath)
-			raise Exception
-		filepath = fpath	
-	#check whether path points to a valid file	
-	else:	
-		if not os.path.exists(fpath):
-			"{} does not exist".format(filepath)
-			raise Exception
-
-	return filepath
-
-def parse_args2(argv):
-	#should be called with one argument, the audio file 
-	if len(sys.argv) != 2:
-		print "Invalid number of arguments. Call with filepath only"
-		raise Exception
-	
-	filepath = sys.argv[1]
-	#Check file extension is .flac
-	if len(filepath) < 4 or filepath[-4:] != "flac":
-		print "Invalid filename..."
-		raise Exception
-	
-	#Accepts unqualified filename
-	# in this case look in default dir 
-	if "/" not in filepath:	
-		fpath = DEFAULT_DIR + "/" + filepath
-		if not os.path.exists(fpath):
-			"{} does not exist in default dir; specify full path".format(filepath)
-			raise Exception
-		filepath = fpath	
-	#check whether path points to a valid file	
-	else:	
-		if not os.path.exists(fpath):
-			"{} does not exist".format(filepath)
-			raise Exception
-
-	return filepath
-
-
-
-
-
-def remove_seg_files(basefile):
-		#remove all matching files
-		cwd = os.getcwd()
-		os.chdir(OUTPATH)
-		filelist = glob.glob(basefile + "__*.flac")
-		for f in filelist:
-			os.remove(f)
-		os.chdir(cwd)
-
-def transcribe(filepath):
-		if DEBUG: print "Pre-processing {}".format(filepath)
-		if DEBUG: print "File length = {}".format(ut.file_length(filepath))		
-		
-		seg_count = pp.prepro2(filepath, OUTPATH)			
-	 	
-		basefile = ut.base_filename(filepath)		
-		if DEBUG: print "basefile is {}".format(basefile)
-		summaryfile = SUMMARY_DIR + "/" + basefile + ".txt"
-		sf = open(summaryfile, "w")
-		#The path to the segment file
-		opath = OUTPATH+"/"+ basefile + "__" + str(i) + ".flac" 
-		i=0
-		while i < seg_count: 
-		#while os.path.exists(opath):
-			if DEBUG: print "opath is {}".format(opath)
-			trans = gs.key_trans(opath)
-			sf.write(trans)
-			if DEBUG: print(trans)
-			#print gs.keyless_trans(opath)			
-			i+=1
-			opath = OUTPATH+"/"+ basefile + "__" + str(i) + ".flac"        	 
-			if DEBUG: print "opath is {}, i is {}".format(opath, i)
-		
-		sf.close()
-		remove_seg_files(basefile)
-
-if __name__ == "__main__":	
-		
-		filepath=parse_args(sys)
-		
-		DEFAULT_DIR = "../sample_audio"
-		OUTPATH = "./seg_audio"
-		SUMMARY_DIR = "../summary"
-		
-		transcribe(filepath)
+if __name__ == "__main__":      
+    filepath, sumpath, segdir = parse_args()
+    transcribe(filepath, sumpath, segdir)

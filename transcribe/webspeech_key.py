@@ -8,7 +8,7 @@ from time import sleep
 import json
 import utils as ut
 
-DEBUG =1 
+DEBUG = ut.get_debug()
 
 #Source https://gist.github.com/offlinehacker/5780124
 
@@ -17,10 +17,9 @@ class google_stt_stream(object):
         self.write_queue = Queue()
         self.keep_streaming = True
         self.audiofile = filename
-        self.rate = ut.file_sampfreq(filename) 	
-
-        #self.upstream_url = "https://www.google.com/speech-api/full-duplex/v1/up?key={}s&pair={}s&lang=en-US&maxAlternatives={}&client=chromium&continuous&interim".format(key, pair, "en-US", 10)  
-        self.upstream_url = "https://www.google.com/speech-api/full-duplex/v1/up?key=%(key)s&pair=%(pair)s&lang=en-US&maxAlternatives=20&client=chromium&continuous&interim" 
+        self.rate = ut.file_sampfreq(filename)
+        self.upstream_url = "https://www.google.com/speech-api/full-duplex/v1/up?key=%(key)s&pair=%(pair)s&lang=%(lang)s&maxAlternatives=%(max)s&client=chromium&continuous&interim"     
+        #self.upstream_url = "https://www.google.com/speech-api/full-duplex/v1/up?key=%(key)s&pair=%(pair)s&lang=en-US&maxAlternatives=20&client=chromium&continuous&interim" 
         self.upstream_headers = {'content-type': 'audio/x-flac; rate={}'.format(self.rate)}
         self.downstream_url = "https://www.google.com/speech-api/full-duplex/v1/down?pair=%(pair)s"
         self.api_key = key 
@@ -31,7 +30,7 @@ class google_stt_stream(object):
  
     def start(self):
         pair = self.generate_request_key()
-        upstream_url = self.upstream_url % {"pair": pair, "key": self.api_key}
+        upstream_url = self.upstream_url % {"pair": pair, "key": self.api_key, "lang" : "en-US", "max": "5"}
         downstream_url = self.downstream_url % {"pair": pair, "key": self.api_key}
  
         self.session = requests.Session()
@@ -42,11 +41,8 @@ class google_stt_stream(object):
         self.upstream_thread.start()
  
     def stop(self):
-        #print "Waiting write_queue to write all data"
         self.write_queue.join()
-        #print "Queue empty"
-        sleep(30)
- 
+        sleep(30) 
         self.keep_streaming=False
         self.upstream_thread.join()
         self.downstream_thread.join()
@@ -55,8 +51,7 @@ class google_stt_stream(object):
         self.write_queue.put(data)
  
     def upstream(self, url):
-        #print 
-	self.session.post(url, headers=self.upstream_headers, files={self.audiofile: open(self.audiofile, 'rb')})
+        self.session.post(url, headers=self.upstream_headers, files={self.audiofile: open(self.audiofile, 'rb')})
  
     def downstream(self, url):
         r = self.session.get(url, stream=True)
@@ -67,28 +62,23 @@ class google_stt_stream(object):
                         break
                     if line:
                         self.output.append(line)
-		        #sys.stdout.write(line)
-			#print line
             except Exception as e:
-                #print "Exception %s, restarting" %e
                 self.keep_streaming = False
                 self.upstream_thread.join()
                 self.keep_streaming = True
                 self.start()
                 return
- 
-        #print "end"
 
     def format_output(self):
         #Gets python objects
         try:
-            py_objs =  [json.loads(j)['result'] for j in self.output if j ]
+            py_objs = [json.loads(j)['result'] for j in self.output if j ]
             #get non-empty lists
             contain_data = filter(lambda lst: len(lst)>0, py_objs)        
             #flat contain_data list
             #TODO: Fix, this may have performance issue if 
-            #	each line is being processed
-            #	since some lines will be certainly unneccessary
+            #   each line is being processed
+            #   since some lines will be certainly unneccessary
             flat = [ item for lst in contain_data for item in lst ]
 
             #Get list of unique/feasible transcriptions
@@ -98,23 +88,23 @@ class google_stt_stream(object):
             prim = ""
             trans = set() 
             for f in flat:
-	            #May not need to go into every value without stability, i.e. if conf is the same
-	            if "stability" not in f:
-		            alternatives = f['alternative']
-		            for alt in alternatives:
-			            #This only tracks the last confidence level
-			            if "confidence" in alt : 
-				            conf = alt["confidence"] 
-				            prim = alt["transcript"]
-			            trans.add(alt["transcript"])
+                #May not need to go into every value without stability, i.e. if conf is the same
+                if "stability" not in f:
+                    alternatives = f['alternative']
+                    for alt in alternatives:
+                        #This only tracks the last confidence level
+                        if "confidence" in alt : 
+                            conf = alt["confidence"] 
+                            prim = alt["transcript"]
+                        trans.add(alt["transcript"])
             #Fix: instead of returning prim, run all trans values through  
             self.output = prim
         except Exception as e:
-		    if DEBUG: print "Exception e is {}. Output is {}".format(e, self.output)
-		    self.output = ""
+            if DEBUG: print "Exception e is {}. Output is {}".format(e, self.output)
+            self.output = ""
 
 if __name__ == "__main__":
-    filename=sys.argv[1] #"../sample_audio/orange2.flac" 
+    filename=sys.argv[1]  
     stt = google_stt_stream(filename)
     stt.start()
     stt.stop()
