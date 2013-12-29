@@ -112,4 +112,4 @@ def transcribe(filepath, sumpath, segdir):
 
 if __name__ == "__main__":      
     filepath, sumpath, segdir = parse_args()
-    return transcribe(filepath, sumpath, segdir)
+    transcribe(filepath, sumpath, segdir)
