@@ -18,6 +18,7 @@ Parses command line args and returns
     output summary file, and segment directory
 """
 def parse_args():    
+    global DEBUG
     parser = ap.ArgumentParser()
     parser.add_argument("filepath", help="path to input audio file")
     parser.add_argument("-i", "--indir", help="directory containing input audio file, if filepath does not contain path")
@@ -33,15 +34,17 @@ def parse_args():
     segdir=""
     
     #Get the input file path
+    #FIX: Optimization, if os.path.isfile(args.filepath): filepath = args.filepath
     drct, fl = ut.split_path(args.filepath)
     if not drct:
         if args.indir and not os.path.isdir(args.indir):
             print "Invalid input directory specified"
             raise Exception
     if not fl:
-        print "Invalid input file specified"
         raise Exception
-    filepath = ut.dir_path( args.indir or cfg_params["in_dir"] ) + fl
+        print "Invalid input file specified"
+    filepath = ut.dir_path( drct or args.indir or cfg_params["in_dir"] ) + fl
+    
     if not os.path.exists(filepath):
         print "Input file not found. Filepath is {}".format(filepath)
         raise Exception    
@@ -69,8 +72,8 @@ def parse_args():
     segdir = ut.dir_path(args.segdir or cfg_params["seg_file_dir"])  
     
     #Set Debug flag
-    if args.debug:
-        DEBUG = args.debug 
+    #if args.debug:
+    #    DEBUG = args.debug 
     
     return (filepath, sumpath, segdir)
 
@@ -85,7 +88,7 @@ Transcribes the audio at filepatha
 def transcribe(filepath, sumpath, segdir):
     if DEBUG: print "filepath= {}, sumpath= {}, segdir= {}".format(filepath, sumpath, segdir)
     if DEBUG: print "File length = {}".format(ut.file_length(filepath))     
-        
+    
     #Writes all segment files to segdir
     seg_count = pp.prepro2(filepath, segdir)           
     
