@@ -43,7 +43,7 @@ def parse_args():
         raise Exception
     filepath = ut.dir_path( args.indir or cfg_params["in_dir"] ) + fl
     if not os.path.exists(filepath):
-        print "Input file not found"
+        print "Input file not found. Filepath is {}".format(filepath)
         raise Exception    
     
     #Get summary file path    
