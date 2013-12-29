@@ -72,8 +72,8 @@ def parse_args():
     segdir = ut.dir_path(args.segdir or cfg_params["seg_file_dir"])  
     
     #Set Debug flag
-    #if args.debug:
-    #    DEBUG = args.debug 
+    if args.debug:
+        DEBUG = args.debug 
     
     return (filepath, sumpath, segdir)
 
@@ -84,6 +84,7 @@ Transcribes the audio at filepatha
         to be transcribed
     sumpath - path to file to write summary in
     segdir - directory to store temporary segment files
+@ret = list of transcribed lines
 """    
 def transcribe(filepath, sumpath, segdir):
     if DEBUG: print "filepath= {}, sumpath= {}, segdir= {}".format(filepath, sumpath, segdir)
@@ -94,7 +95,7 @@ def transcribe(filepath, sumpath, segdir):
     
     basefile = ut.base_filename(filepath)       
     if DEBUG: print "basefile is {}".format(basefile)
-    
+    trans_list = []
     sf = open(sumpath, "w")
     #Consider using #while os.path.exists(opath): 
     segfiles = (ut.dir_path(segdir) + basefile + "__" + str(i) + ".flac" for i in range(seg_count))    
@@ -102,11 +103,13 @@ def transcribe(filepath, sumpath, segdir):
         if DEBUG: print "segment path is {}".format(seg)
         trans = gs.key_trans(seg)
         sf.write(trans + "\n")
-        if DEBUG: print(trans)         
+        if DEBUG: print(trans)
+        trans_list.append(trans)         
     
     sf.close()
     ut.remove_seg_files(segdir, basefile + "__*.flac")
+    return trans
 
 if __name__ == "__main__":      
     filepath, sumpath, segdir = parse_args()
-    transcribe(filepath, sumpath, segdir)
+    return transcribe(filepath, sumpath, segdir)
