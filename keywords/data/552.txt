@@ -3,24 +3,24 @@ Fall 2011
 Department of Electrical and Computer Engineering
 University of Toronto
 
-Instructor:
+Instructor
 Prof. Natalie Enright Jerger
 MAIN | COURSE OUTLINE
 
     The course website can be accessed through the portal for enrolled students. This page provides information to help students decide on course selection but will not be maintained throughout the semester.
-    Instructor: 	
+    Instructor 	
 
     	Prof. Natalie Enright Jerger
 
-    	PT374A (D.L. Pratt Buidling), Tel: 978-5056, Email: enright at eecg dot toronto dot edu
+    	PT374A (D.L. Pratt Buidling), Tel 978-5056, Email enright at eecg dot toronto dot edu
 
-    	Office Hours: Mondays 2-3 and Wednesdays 11-12 or by appointment
+    	Office Hours Mondays 2-3 and Wednesdays 11-12 or by appointment
 
     Course Description. This course provides students with a solid understanding of fundamental architectural techniques used to build today's high-performance processors and systems. Course topics include pipelining, superscalar, out of order execution, multithreading, caches, virtual memory, and multiprocessors. Some emphasis will be placed on hardware/software interaction to achieve performance. Issues affecting the nexus of architecture, compilers and operating systems will be briefly touched upon.
 
     Nearly all engineers, regardless of sub-specialty, utilize programming in the course of their job; to write high performance computer programs, it is necessary to understand the underlying hardware that those programs will run on. Two-thirds of this course will focus on high performance architectures and memory systems. The final third of the course will focus on multiprocessors. Significant challenges face today's computer hardware industry. At the forefront of these challenges is the multi-core revolution. The transition from single processor designs to multi-core design requires hardware and software designers knowledgeable about a range of issues in parallel computing including hardware.
 
-    Course Outcomes. Students who successfully fulfills the course requirements will have demonstrated:
+    Course Outcomes. Students who successfully fulfills the course requirements will have demonstrated
 
         an ability to understand the design of a pipelined CPU and cache hierarchy
         an ability to analyze and evaluate CPU and memory hierarchy performance
@@ -29,7 +29,7 @@ MAIN | COURSE OUTLINE
         experience with a complex simulation tool to study various microarchitectural features. 
 
     Course Timetable
-    LEC01: Prof. Natalie Enright Jerger
+    LEC01 Prof. Natalie Enright Jerger
 
         Mon 1-2 RS 208
         Wed 1-2 BA 1220
@@ -45,8 +45,8 @@ MAIN | COURSE OUTLINE
        	Quizzes 	10%
        	Midterms 	30%
        	Final 	35%
-    Required Textbook:
-    Jean-Loup Baer, Microprocessor Architecture: From Simple Pipelines to Chip Multiprocessors, 1st edition.
+    Required Textbook
+    Jean-Loup Baer, Microprocessor Architecture From Simple Pipelines to Chip Multiprocessors, 1st edition.
     External Web Resources
 
         Synthesis Lectures in Computer Architecture (free downloads within UofT)
