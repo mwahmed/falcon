@@ -1,0 +1,25 @@
+README
+
+
+This module contains the code that returns a summary based on tf-idf scores
+
+data:
+	This directory will contain the documents that can be used as reference to calculate tf-idf scores.
+
+df.py:
+	This module calculates the number of occurences of each term in each document contained in the data directory
+	The number of occurences of each word is written to the file saved_idf.txt
+
+tfidf.py:
+	This module contains a function that takes a transcription as input and calculates tf and idf values for every word appearing in the document.
+
+	Then, it calculates the tf-idf score per sentence, and finds the avg per sentence tf-idf score. Sentences with tf-idf scores greater than the average are selected to be part of the summary.
+
+
+Running instructions:
+	df.py:
+		python df.py /path/to/<saved_df_scores_file> /path/to/<df_meta_file>
+
+	tfidf should be imported by the module calling it	
+
+
