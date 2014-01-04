@@ -161,9 +161,11 @@ Segments audio file using a much simple algorithm than
     filepath- path to input flac file 
     outpath- directory to store segments
     seg_size- length of segment in seconds
+    overlap- time in seconds that the beginning of the next 
+    	segment overlaps with the ending of the current segment
 @ret= returns the number of segments    
 """ 
-def prepro2(filepath, outpath, seg_size=10):    
+def prepro2(filepath, outpath, seg_size=120, overlap=5):    
     #sndfile 
     sndf = sa.Sndfile(filepath, 'r')    
     #fs= sampling frequency(in Hz)
@@ -189,12 +191,12 @@ def prepro2(filepath, outpath, seg_size=10):
         samp_start = t_start * fs
         samp_end = min(t_end * fs, total_frames)
         seg_bounds.append((samp_start, samp_end))       
-        t_start += seg_size
+        t_start = (t_end - overlap)
         t_end += seg_size
 
     basename = ut.base_filename(filepath)
     if DEBUG: print "basename is {}".format(basename)
-    if DEBUG: print "There are {} segments".format(len(seg_bounds))
+    if DEBUG: print "There are {} segment(s)".format(len(seg_bounds))
     
     setup_dir(outpath)
     write_segs(audio, seg_bounds, sndf, outpath, base_filename=basename)
