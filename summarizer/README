@@ -1,7 +1,7 @@
 README
 
 
-This module contains the code that returns a summary based on tf-idf scores
+This module contains the code that returns a summary based on tf-idf scores and cuewords used from G. Murray's thesis.
 
 data:
 	This directory will contain the documents that can be used as reference to calculate tf-idf scores.
@@ -15,6 +15,10 @@ tfidf.py:
 
 	Then, it calculates the tf-idf score per sentence, and finds the avg per sentence tf-idf score. Sentences with tf-idf scores greater than the average are selected to be part of the summary.
 
+
+cuewords.py:
+	This module checks the transcript to see if any sentences contain cuewords and includes those sentences in the summary. Cuewords are loaded into
+	a dictionary from the cuewords.txt file.
 
 Running instructions:
 	df.py:
