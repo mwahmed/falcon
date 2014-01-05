@@ -1,6 +1,7 @@
 #!/bin/python
 
-import google_speech as gs
+import google_speech as gs #TODO: Remove
+import webspeech_key as gt
 import prepro as pp
 import sys
 import re
@@ -14,13 +15,20 @@ DEBUG = ut.get_debug()
 """
 Parses command line args and returns 
     list of parameters
+@params
+    fpath-input filepath 
+        Useful, if called via module import    
 @ret= List of paths to input file,
     output summary file, and segment directory
 """
-def parse_args():    
+#TODO: Add, optional args for indir, debug, sumpath, segdir
+def parse_args(fpath=None):    
     global DEBUG
     parser = ap.ArgumentParser()
-    parser.add_argument("filepath", help="path to input audio file")
+    
+    if not fpath:
+        parser.add_argument("filepath", help="path to input audio file")
+    
     parser.add_argument("-i", "--indir", help="directory containing input audio file, if filepath does not contain path")
     parser.add_argument("-d", "--debug", help="enble debugging output", type=bool)
     parser.add_argument("-s", "--sumpath", help="path to summary file. Can either be file or dir. If dir, summary file stored in dir/basefilename.txt")
@@ -34,8 +42,9 @@ def parse_args():
     segdir=""
     
     #Get the input file path
-    #FIX: Optimization, if os.path.isfile(args.filepath): filepath = args.filepath
-    drct, fl = ut.split_path(args.filepath)
+    #FIX: Optimization, if os.path.isfile(args.filepath): filepath = args.filepath    
+    
+    drct, fl = ut.split_path(fpath if fpath else args.filepath)
     if not drct:
         if args.indir and not os.path.isdir(args.indir):
             print "Invalid input directory specified"
@@ -90,26 +99,41 @@ def transcribe(filepath, sumpath, segdir):
     if DEBUG: print "filepath= {}, sumpath= {}, segdir= {}".format(filepath, sumpath, segdir)
     if DEBUG: print "File length = {}".format(ut.file_length(filepath))     
     
+    sys.exit(1)
+    
     #Writes all segment files to segdir
     seg_count = pp.prepro2(filepath, segdir)           
     
     basefile = ut.base_filename(filepath)       
     if DEBUG: print "basefile is {}".format(basefile)
-    trans_list = []
+    
     sf = open(sumpath, "w")
     #Consider using #while os.path.exists(opath): 
     segfiles = (ut.dir_path(segdir) + basefile + "__" + str(i) + ".flac" for i in range(seg_count))    
+    trans_list = gt.google_transcribe(segfiles)
+    if DEBUG: print trans_list
+    
+    for t in trans_list:
+        sf.write(t + "\n")
+    """
     for seg in segfiles:     
         if DEBUG: print "segment path is {}".format(seg)
         trans = gs.key_trans(seg)
         sf.write(trans + "\n")
         if DEBUG: print(trans)
         trans_list.append(trans)         
-    
+    """
     sf.close()
     ut.remove_seg_files(segdir, basefile + "__*.flac")
-    return trans
+    #Trans_list is a list of lines that are transcribed
+    return trans_list
+
+
+def call_transcribe(filepath=None):
+    filepath, sumpath, segdir = parse_args(fpath=filepath)
+    trans_list = transcribe(filepath, sumpath, segdir)
+    return trans_list
 
 if __name__ == "__main__":      
-    filepath, sumpath, segdir = parse_args()
-    transcribe(filepath, sumpath, segdir)
+    call_transcribe()
+    
