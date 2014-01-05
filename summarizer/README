@@ -27,3 +27,7 @@ Running instructions:
 	tfidf should be imported by the module calling it	
 
 
+TODO:
+	- Use NLTK POS tagging to handle the unique_words in transcription
+	- Clean up the df.py script to parse the input file properly. Check with Veneris and/or Zissis whether we can keep using NLTK corpora before proceeding with this. 
+		- If they give us a go-ahead, then also write a smarter parsing logic for the brown_nolines.txt file

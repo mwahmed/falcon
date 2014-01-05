@@ -85,9 +85,13 @@ def write_df_vals_to_file(saved_df_file_path, df):
 		if not new_file:
 			continue
 		fr = open(new_file, "r")
-		# To store the transcription as a list of words 
-		whitespace_lines = fr.readlines() # list of strings with whitespace
+		content = fr.read()
 		fr.close()
+		content = content.lower().replace(".", " ")
+		content_words = content.split(" ") # get a list of words
+		# Remove all strings = "" from content_words SO# 1157106
+		parsed_words = filter(lambda a: a != "", content_words)
+
 		lines = [whitespace_line.lower().strip() for whitespace_line in whitespace_lines]
 		lines_str = " ".join(lines) # single string
 		transcription = lines_str.split(" ") # single list
@@ -143,14 +147,18 @@ if __name__ == '__main__':
 	df_meta_file_path = sys.argv[2]
 
 	if not os.path.exists(saved_df_file_path):
-		print "File " +  saved_df_file_path + " does not exist."
-		sys.exit(1)
+		opt = raw_input("File " +  saved_df_file_path + " does not exist, enter Y to create it or N to exit")
+		if opt == "Y":
+			with file(saved_df_file_path, "a"):
+				os.utime(saved_df_file_path)
+
+		elif opt == "N":
+			sys.exit(1)
 
 	if not os.path.exists(df_meta_file_path):
 		print "File " + df_meta_file_path + " does not exist, and it will be created."
-		fw = open(df_meta_file_path, "w")
-		fw.write("")
-		fw.close()
+		with file(df_meta_file_path):
+			os.utime(df_meta_file_path)
 
 	# Find all files created after the last modified time for the meta file
 	# TODO-1: Change it to work with the MONGODB instance if needed
