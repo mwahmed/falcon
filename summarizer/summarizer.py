@@ -3,6 +3,7 @@ import tfidf
 import pdb
 import sys
 from bson.objectid import ObjectId
+from pymongo import MongoClient
 
 # Take the transcription and summary size ( as % of total sentences ) as input,
 # call the tfidf module and the cuewords module passing in the respective limits to each 
@@ -41,10 +42,19 @@ def summarize(transcriptionLines, summary_limit_percent, saved_df_file_path):
 # Get the transcription from the database
 # Convert it into a list of strings
 def main(post_id, summary_limit_percent):
+	client = MongoClient('localhost', 27017)
 	db =  client.ahks_development
-	transcriptions = db.transcription
+	transcriptions = db.transcriptions
 	document = transcriptions.find_one({'_id': ObjectId(post_id)})
 	transcriptionText = document['text']
 	transcriptionLines = transcriptionText.split("\n")
+	summary_limit_percent = float(summary_limit_percent)
+	return summarize(transcriptionLines, summary_limit_percent, "/home/ubuntu/falcon/summarizer/saved_df.scores")
 
-	return summarize(transcriptionLines, summary_limit_percent, "saved_df.scores")
+
+if __name__ == "__main__":
+	post_id = sys.argv[1]
+	summary_limit_percent = sys.argv[2]
+	summary =  main(post_id, summary_limit_percent)
+	for line in summary:
+		print line

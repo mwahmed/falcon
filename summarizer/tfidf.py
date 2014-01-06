@@ -56,9 +56,9 @@ def get_tfidf_scores(input_transcription, saved_df_file):
 	input_split = set(word_list_input_transcription)
 	input_word_count = len(input_split)
 	total_files = 503
-	print "###########################################################################################"
-	print "REMEMBER TO UPDATE THE total_files variable in tfidf.py everytime you get more tf-idf data"
-	print "###########################################################################################"
+	#print "###########################################################################################"
+	#print "REMEMBER TO UPDATE THE total_files variable in tfidf.py everytime you get more tf-idf data"
+	#print "###########################################################################################"
 
 	for word in input_split:
 		tf = float(word_list_input_transcription.count(word))/input_transcription_word_len
