@@ -43,6 +43,6 @@ def calculate_sentence_score(sentence):
 
 # speechTranscriptionLines is the transcript, stored as a list of strings
 def get_cuewords_scores(speechTranscriptionLines):
-	populate_cueword_DS("cuewords.txt")
+	populate_cueword_DS("/home/ubuntu/falcon/summarizer/cuewords.txt")
 	summary_idxs = parse_speech_transcript_and_get_summary(speechTranscriptionLines)
 	return summary_idxs
