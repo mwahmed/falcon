@@ -17,22 +17,31 @@ Parses command line args and returns
     list of parameters
 @params
     fpath-input filepath 
-        Useful, if called via module import    
+        Useful, if called via module import  
+    idr- input directory
+        directory containing input file
+    dbg- debug flag
+    spath- summary path
+        either the summary file name or path to store summary in
+    sgdr- segment dir
+        dir that stores temporary audio file segments
 @ret= List of paths to input file,
     output summary file, and segment directory
 """
-#TODO: Add, optional args for indir, debug, sumpath, segdir
-def parse_args(fpath=None):    
+def parse_args(fpath=None, idr=None, dbg=None, spath=None, sgdr=None):    
     global DEBUG
     parser = ap.ArgumentParser()
     
     if not fpath:
         parser.add_argument("filepath", help="path to input audio file")
-    
-    parser.add_argument("-i", "--indir", help="directory containing input audio file, if filepath does not contain path")
-    parser.add_argument("-d", "--debug", help="enble debugging output", type=bool)
-    parser.add_argument("-s", "--sumpath", help="path to summary file. Can either be file or dir. If dir, summary file stored in dir/basefilename.txt")
-    parser.add_argument("-f", "--segdir", help="directory to store temporary audio seg/frag-ment files")
+    if not idr:
+        parser.add_argument("-i", "--indir", help="directory containing input audio file, if filepath does not contain path")
+    if not dbg:
+        parser.add_argument("-d", "--debug", help="enble debugging output", type=bool)
+    if not spath:
+        parser.add_argument("-s", "--sumpath", help="path to summary file. Can either be file or dir. If dir, summary file stored in dir/basefilename.txt")
+    if not sgdr:    
+        parser.add_argument("-f", "--segdir", help="directory to store temporary audio seg/frag-ment files")
     args = parser.parse_args()
     
     cfg_params = ut.get_cfg_params()
@@ -40,45 +49,60 @@ def parse_args(fpath=None):
     filepath=""
     sumpath=""
     segdir=""
-    
+
+    directory=""
+
     #Get the input file path
-    #FIX: Optimization, if os.path.isfile(args.filepath): filepath = args.filepath    
-    drct, fl = ut.split_path(fpath if fpath else args.filepath)
-    if not drct:
-        if args.indir and not os.path.isdir(args.indir):
-            print "Invalid input directory specified"
+    if fpath and os.path.isfile(fpath):    
+        filepath = fpath
+    else:    
+        drct, fl = ut.split_path(fpath if fpath else args.filepath)
+        if not fl:
+            print "Invalid input file: '{}'".format(drct+"/"+fl)
             raise Exception
-    if not fl:
-        raise Exception
-        print "Invalid input file specified"
-    filepath = ut.dir_path( drct or args.indir or cfg_params["in_dir"] ) + fl
+        if not drct:
+            directory = idr or args.indir or cfg_params["in_dir"]
+            if not os.path.isdir(directory):
+                print "Invalid input directory '{}'".format(directory)
+                raise Exception
+        filepath = ut.dir_path(directory) + fl
+        
+        if not os.path.exists(filepath):
+            print "Input file not found. Filepath is {}".format(filepath)
+            raise Exception    
     
-    if not os.path.exists(filepath):
-        print "Input file not found. Filepath is {}".format(filepath)
-        raise Exception    
-    
-    #Get summary file path    
-    if args.sumpath:
-        drct, fl = ut.split_path(args.sumpath)
-        if drct and fl: sumpath = args.sumpath
+    #Get summary file path
+    sumpath = spath or args.sumpath  
+    if sumpath:
+        drct, fl = ut.split_path(sumpath)
+        directory = drct
+        if drct and fl:
+            pass
         elif drct:
             sumpath = ut.dir_path(drct) + ut.base_filename(filepath)
         elif fl: 
-            sumpath = ut.dir_path(cfg_params["summary_dir"]) + fl
+            directory=ut.dir_path(cfg_params["summary_dir"])
+            sumpath = directory + fl
         else:
-            print "Invalid summary path specified"
+            #TODO: Check if this is necessary
+            print "Invalid summary path {}".format(sumpath)
             raise Exception
     else:
-         sumpath = ut.dir_path(cfg_params["summary_dir"]) + ut.base_filename(filepath)
+       directory = ut.dir_path(cfg_params["summary_dir"])
+       sumpath = directory + ut.base_filename(filepath)
     #Append extension
     if sumpath[-5:] != ".smry" : sumpath += ".smry"
-    
+    #If dir does not exist, create it
+    if not os.path.exists(directory):
+        if DEBUG: print "Creating dir {}".format(directory)
+        os.makedirs(directory)
+            
     #Get segment directory path           
-    if args.segdir and not os.path.isdir(args.segdir):
-        print "Invalid segment file directory specified"
-        raise Exception
-    segdir = ut.dir_path(args.segdir or cfg_params["seg_file_dir"])  
-    
+    segdir = sgdr or args.segdir or cfg_params["seg_file_dir"]
+    if not os.path.exists(segdir):
+        if DEBUG: print "Creating dir {}".format(segdir)
+        os.makedirs(segdir)
+  
     #Set Debug flag
     if args.debug:
         DEBUG = args.debug 
@@ -97,8 +121,6 @@ Transcribes the audio at filepatha
 def transcribe(filepath, sumpath, segdir):
     if DEBUG: print "filepath= {}, sumpath= {}, segdir= {}".format(filepath, sumpath, segdir)
     if DEBUG: print "File length = {}".format(ut.file_length(filepath))     
-    
-    sys.exit(1)
     
     #Writes all segment files to segdir
     seg_count = pp.prepro2(filepath, segdir)           
@@ -126,10 +148,21 @@ def transcribe(filepath, sumpath, segdir):
     ut.remove_seg_files(segdir, basefile + "__*.flac")
     #Trans_list is a list of lines that are transcribed
     return trans_list
+"""
+calls transcribe function
+@params
+    filepath- path to input file; 
+        can be path or just filename
+    indir- if filepath specifies just name
+        use this to specify dir
+    sumpath- filepath or directory of summary file
+    segdir- dir holding temporary segment files
+    debug- debug flag
+@ret- list of transcribed lines
+"""
 
-
-def call_transcribe(filepath=None):
-    filepath, sumpath, segdir = parse_args(fpath=filepath)
+def call_transcribe(filepath=None, sumpath=None, segdir=None, indir=None, debug=None):
+    filepath, sumpath, segdir = parse_args(fpath=filepath, idr=indir, spath=sumpath, sgdr=segdir, dbg=debug)
     trans_list = transcribe(filepath, sumpath, segdir)
     return trans_list
 
