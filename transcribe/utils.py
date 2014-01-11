@@ -16,7 +16,7 @@ def get_cfg_path():
     path = "./{}".format(filename)
     if not os.path.exists(path):
         dirpath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) 
-        path="{}/{}".format(dirpath, path) 
+        path="{}/{}".format(dirpath, filename) 
     return path    
 
 """
