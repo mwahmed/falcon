@@ -43,7 +43,6 @@ def parse_args(fpath=None):
     
     #Get the input file path
     #FIX: Optimization, if os.path.isfile(args.filepath): filepath = args.filepath    
-    
     drct, fl = ut.split_path(fpath if fpath else args.filepath)
     if not drct:
         if args.indir and not os.path.isdir(args.indir):
