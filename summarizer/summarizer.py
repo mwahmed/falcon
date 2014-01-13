@@ -49,7 +49,7 @@ def main(post_id, summary_limit_percent):
 	transcriptionText = document['text']
 	transcriptionLines = transcriptionText.split("\n")
 	summary_limit_percent = float(summary_limit_percent)
-	return summarize(transcriptionLines, summary_limit_percent, "/home/ubuntu/falcon/summarizer/saved_df.scores")
+	return summarize(transcriptionLines, summary_limit_percent, "/Users/ayushkulkarni/Documents/4S/ECE496/falcon/summarizer/saved_df.scores")
 
 
 if __name__ == "__main__":
