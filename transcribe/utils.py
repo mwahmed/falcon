@@ -6,19 +6,25 @@ import re
 import ConfigParser as confpar
 import os
 import glob
-
-"""
-[GLOBALS]
-"""
-"""
-Location of configuration file
-"""
-CFG_FILE_LOC="./transcribe.conf"
-CFG_FILE_SEC="main"
+import inspect
 
 """
 [CONFIGURATION FILE]
 """
+def get_cfg_path():
+    filename="transcribe.conf"
+    path = "./{}".format(filename)
+    if not os.path.exists(path):
+        dirpath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) 
+        path="{}/{}".format(dirpath, filename) 
+    return path    
+
+"""
+GLOBALS
+"""
+CFG_FILE_LOC=get_cfg_path()
+CFG_FILE_SEC="main"
+
 """
 Returns whether debug flag is set
 @ret=Boolean value of debug flag 
