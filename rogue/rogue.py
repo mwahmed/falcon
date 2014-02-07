@@ -71,9 +71,14 @@ This also assumes that identical and complete
 @return- a number between 0 and 1, representing
     the similarity percentage 
 """
-def similarity(machine, human):
+def similarity(machine, human_unparsed):
     machine.sort()
-    human.sort()
+    human_unparsed.sort()
+    human = []
+    for line in human_unparsed:
+        line = line.replace(",", "")
+        line = line.replace("-", " ")
+        human.append(line)
     
     #The non-normalized score
     nscore = len(human) + len(machine)
