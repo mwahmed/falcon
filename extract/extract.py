@@ -48,6 +48,39 @@ def has_time(tagged):
     return match    
 
 """
+    #(N* , IN)*
+"""
+def noun_phrase(tagged):
+    ret = []
+    i = 0
+    while i < len(tagged): 
+        t = tagged[i]
+        if noun.search(t[1]):
+            ret.append(t)
+            j = i+1
+            in_not_noun = True #Next one must be IN (preposition/conjuction)
+            while j < len(tagged):
+                t = tagged[j]
+                if in_not_noun:
+                    if t[1] == "IN":
+                        ret.append(t)
+                    else:
+                        return ret
+                else:
+                    if noun.search(t[1]):
+                        ret.append(t)
+                    else:
+                        return ret
+                j+=1
+                in_not_noun = not in_not_noun               
+        i+=1
+    return ret 
+
+def verb_phrase(tagged):
+    pass
+
+
+"""
 Returns list of list of tuples of words conforming to pattern
 Matches patters of the form I <will> <complete> the <task> tomorrow.
 @params-
@@ -67,17 +100,31 @@ def future_deliverable(tagged):
                 tmp.append(tagged[i])    
                 ret = findfirst(tagged[i+1:], "VB")
                 if ret:
-                    tmp.append(ret)    
+                    tmp.append(ret)
+                    rest = tagged[i+2:]
+                    if len(rest) > 5 :
+                        tmp.append(rest[:5])
+                    else:
+                        tmp.append(rest)
                     #Identify relevant noun
-                    ret = findfirst(tagged[i+2:], noun)
-                    if ret:
-                        tmp.append(ret)
+                    #ret = noun_phrase(tagged[i+2:])#findfirst(tagged[i+2:], noun)
+                    #print "noun phrase is {}\nFull Sent is {}".format(ret, tagged)
+                
+                    #if ret:
+                    #    tmp.append(ret)
                     
         except Exception as e:
             pass
         if tmp: match_future.append(tmp)
         
     return match_future
+
+def future_deliverable2(tagged):
+    dlvr = [] #deliverables
+    for i in range(len(tagged)):
+        t = tagged[i]
+        if tagged[i][1] == "MD":
+            findfirst(tagged[i+1:], "VB")    
 
 def current_deliverables(tagged):
     match_present = []
@@ -105,8 +152,7 @@ def current_deliverables(tagged):
 sent can be a single sentence as a string
     or a list of tagged words
 """
-def deliverables(sent):
-        
+def deliverables(sent):       
     tagged = sent
     if isinstance(sent, str):
         tagged = n.pos_tag(n.word_tokenize(sent))            
@@ -123,9 +169,9 @@ def deliverables(sent):
     #Next identify dates, and task
     #Then things in the past
     
-    if match_present: return match_present        
+    if match_future: return match_future
+  
     
-            
 if __name__ == "__main__":
     
     """
@@ -142,7 +188,7 @@ if __name__ == "__main__":
     fileid = europarl.fileids()[0]
     sents = europarl.sents(fileid)
     try:
-        for s in sents[:10]:
+        for s in sents[10:20]:
             ret = deliverables(s)
             if ret:
                 print "Sentence is: {}\n Ret is: {}\n\n".format(" ".join(s), ret)

@@ -1,6 +1,6 @@
 #Returns an accuracy of the generated summary
-import functools as ft
 import re
+import numpy as np
 
 """
 Remove irrelevant words from line, e.g. articles
@@ -49,11 +49,14 @@ Checks whether the line or a line approprimately
 """
 def insummary(line, summary):
 
-    #Creates a partially applied function
-    #   that only requires second arg to line_similarity
-    line_cmp = ft.partial(line_similarity, line)
-    #We consider it in summary if greater than 90% similarity 
-    return 0.9 < max(map(line_cmp, summary)) 
+    for s in summary: 
+        sim=line_similarity(line, s) 
+        #if sim < 1:
+        #    print line
+        #    print s
+        if sim>0.95:
+            return True 
+    return False
 
 """
 Computes accuracy of machine generated summary
@@ -63,7 +66,7 @@ TODO: Relax following assumption
 This also assumes that identical and complete 
     sentences are used    
 @params
-    machine- list of lines in machine generated summary
+    machine- list of lines (str) in machine generated summary
     human- list of lines in human generated summary
 @return- a number between 0 and 1, representing
     the similarity percentage 
@@ -91,7 +94,7 @@ More permissive version of similarity
 #TODO: Maybe too permissive, should not exceed
 #score of similarity if identical sentences used
 #See test results
-def similarity2(machine, human):
+def similarity2(machine, human): 
     nscore = len(human) + len(machine)
     score = nscore
     for m in machine:
@@ -104,21 +107,30 @@ def similarity2(machine, human):
 
     return (score/float(nscore))
 
+"""
+Same problems as similarity 2
+"""
+def similarity3(machine, human):
+    mbag = [word for sent in machine for word in sent.split()]
+    hbag = [word for sent in human for word in sent.split()]
+    
+    mbag.sort()
+    hbag.sort()
+    
+    words = list(set(mbag + hbag)) #list of unique words
+    mvect = [0]* len(words)
+    hvect = [0]* len(words)
+    
+    for idx in range(len(words)):
+        w = words[idx]
+        mvect[idx] = mbag.count(w)
+        hvect[idx] = hbag.count(w)
+    #Now do the eulidean distance of these 2 vectors
 
-"""
-Functional implementation of similarity2
-"""
-def similarity2f(machine, human):
-    nscore = len(human) + len(machine)
-    #Argument reversed version of insummary
-    #So we can create partial applied function
-    arg_rev_insum = lambda summary, line: insummary(line, summary)
-    #A partial function that accepts line from
-    # human summary; return true if line in summary
-    h_summ = ft.partial(arg_rev_insum, human) 
-    m_summ = ft.partial(arg_rev_insum, machine) 
-    #Predicate that negates input
-    not_pred = lambda arg: not arg
-    s1=len(filter(not_pred, map(m_summ, machine))) 
-    s2=len(filter(not_pred, map(h_summ, human)))
-    return (nscore - s1-s2)/float(nscore)
+    hvect = np.array(hvect)
+    hvect = hvect/np.sqrt(np.sum(hvect * hvect)) #Normalize
+    mvect = np.array(mvect)
+    mvect = mvect/np.sqrt(np.sum(mvect * mvect)) #Normalize
+
+    dist = np.linalg.norm(hvect - mvect)
+    return dist

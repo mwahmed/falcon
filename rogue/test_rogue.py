@@ -10,6 +10,13 @@ def rand_text(arg):
        Since about 1900, the Black Canyon and nearby Boulder Canyon had been investigated for their potential to support a dam that would control floods, provide irrigation water and produce hydroelectric power. In 1928, Congress authorized the project. The winning bid to build the dam was submitted by a consortium called Six Companies, Inc., which began construction on the dam in early 1931. Such a large concrete structure had never been built before, and some of the techniques were unproven. The torrid summer weather and the lack of facilities near the site also presented difficulties. Nevertheless, Six Companies turned over the dam to the federal government on March 1, 1936, more than two years ahead of schedule.
        Hoover Dam impounds Lake Mead, the largest reservoir in the United States by volume.[5] The dam is located near Boulder City, Nevada, a municipality originally constructed for workers on the construction project, about 25 mi (40 km) southeast of Las Vegas, Nevada. The dam's generators provide power for public and private utilities in Nevada, Arizona, and California. Hoover Dam is a major tourist attraction; nearly a million people tour the dam each year. Heavily travelled U.S. 93 ran along the dam's crest until October 2010, when the Hoover Dam Bypass opened."""
 
+def scrub(text):
+    tmp = text.replace("\n", "")
+    tmp = tmp.split(".")
+    multi_word = lambda x: len(x)>1
+    return filter(multi_word, tmp)
+
+
 def info(score, exp=None):
     if isinstance(exp, float) or isinstance(exp, int):
         print "Score is {}; expected score is {}".format(score, exp)
@@ -26,24 +33,35 @@ if __name__ == "__main__":
     text2 = rand_text(2)
 
     #Put in form that is required by rogue
-    tmp1 = text1.replace("\n", "")
-    tmp2 = text2.replace("\n", "")
-    
-    tmp1 = tmp1.split(".")
-    tmp2 = tmp2.split(".")
+    clean1=scrub(text1)
+    clean2=scrub(text2)
 
-    multi_word = lambda x: len(x)>1
-    clean1= filter(multi_word, tmp1)
-    clean2= filter(multi_word, tmp2)
-
+    s = rogue.similarity(clean1, clean1)
+    info(s, exp=1)
     s = rogue.similarity2(clean1, clean1)
     info(s, exp=1)
+    print " "
+    
+    s = rogue.similarity(clean1, clean2)
+    info(s, exp=0)
     s = rogue.similarity2(clean1, clean2)
     info(s, exp=0)
+    print " "
+    
+    s = rogue.similarity(clean1+clean2, clean2)
+    info(s, "~0.5")
     s = rogue.similarity2(clean1+clean2, clean2)
     info(s, "~0.5")
+    print " "
+    
+    s = rogue.similarity(clean1, clean2+clean1[0:3])
+    info(s, "~0.1")
     s = rogue.similarity2(clean1, clean2+clean1[0:3])
     info(s, "~0.1")
+    print " "
+    
+    s = rogue.similarity(clean1, clean1+clean2[0:3])
+    info(s, "~0.9")
     s = rogue.similarity2(clean1, clean1+clean2[0:3])
     info(s, "~0.9")
-
+    print " "

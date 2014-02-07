@@ -6,8 +6,9 @@ from threading import Thread
 from time import sleep
 import json
 import utils as ut
+import time 
 
-DEBUG = 0 #ut.get_debug()
+DEBUG = ut.get_debug()
 
 #Adapted from https://gist.github.com/offlinehacker/5780124
 
@@ -73,18 +74,14 @@ class google_stt(object):
         self.downstream_thread = Thread(target=self.downstream, args=(dn_url,))
 
         self.upstream_thread.start()
-        self.downstream_thread.start()
- 
+        self.downstream_thread.start() 
     """
     Joins upstream and downstream threads
     """
     def stop(self):
-        #TODO: Check if the following is even needed
-        sleep(30) 
-        #self.keep_streaming=False
         self.upstream_thread.join()
         self.downstream_thread.join()
- 
+
     """
     Posts audio file to url, with given headers
     @params 
@@ -110,6 +107,7 @@ class google_stt(object):
                 if e : arr.append(e)
         else:
             if elem: arr.append(elem)
+    
     """
     Returns a list of transcriptions after 
         parsing JSON
@@ -143,8 +141,8 @@ class google_stt(object):
             return 
         try:
             for line in r.iter_lines():
-                if line:                                               
-                    self.merge(self.output, self.parse_json(json.loads(line)["result"]), flat=False) 
+                if line:
+                    self.merge(self.output, self.parse_json(json.loads(line)["result"]), flat=False)
         except TypeError as e:
             self.upstream_thread.join()
             return
@@ -165,28 +163,61 @@ def pick_best(trans):
         ret.append(elem)
     return ret
 
-#TODO:Pass all segments of one file in one shot                    
-#   to get best CPU utilization by saving object creation overhead
 """
-@params-list of files  
+Same as stt merge
+"""
+def merge(arr, elem, flat=True):        
+    if flat and isinstance(elem, list):
+        for e in elem:
+            if e : arr.append(e)
+    else:
+        if elem: arr.append(elem)
+
+"""
+Handles the actual transcription of the file
+@params
+    file- specific file 
+"""
+def google_transcribe_helper(filename, idx, results): 
+    stt = google_stt()
+    if DEBUG: print "Processing {}".format(filename)
+    
+    stt.start(filename)        
+    stt.stop()
+    if DEBUG: print "stt.output is: \n{}".format(stt.output)
+    #TODO: try stt.start(filename, run=1) if stt.output not adequate
+    
+    ret = pick_best(stt.output)
+    if DEBUG: print "ret is: \n{}".format(ret)
+    results[idx] = ret
+
+#TODO: Restrict the max number of threads ~4
+#	Divide total files amongst max threads
+"""
+@params
+    files-list or generator of files  
 """                    
 def google_transcribe(files):
     #af_list = ["orange2.flac", "chan3_0_30.flac", "wasi1_conv.flac"]
     #filename="../sample_audio/" + af_list[1]  
     
-    stt = google_stt()
-    trans_list = []
-    for filename in files:    
-        if DEBUG: print "Processing {}".format(filename)
-        stt.start(filename)
-        stt.stop()
-        if DEBUG: print "stt.output is: \n{}".format(stt.output)
-        #TODO: try stt.start(filename, run=1) if stt.output not adequate
-        ret = pick_best(stt.output)
-        if DEBUG: print "ret is: \n{}".format(ret) 
-        stt.merge(trans_list, ret)
-    
-    return trans_list
+    #files may be generator
+    files = list(files)    
+    threads = [None]*len(files) 
+    results = threads[:]
+    trans_list=[]
+    for i in range(len(threads)):
+        threads[i]= Thread(target=google_transcribe_helper, args=(files[i], i, results))
+        threads[i].start()
+        
+    for i in range(len(threads)):
+        threads[i].join()
+        if DEBUG: print "results is {}".format(results)
+        merge(trans_list, results[i])
+        
+    return trans_list  
+          
+start_time = time.time()
 
 if __name__ == "__main__":
     google_transcribe("")

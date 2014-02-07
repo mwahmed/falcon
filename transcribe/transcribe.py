@@ -1,7 +1,7 @@
 #!/bin/python
 
-import google_speech as gs #TODO: Remove
-import webspeech_key as gt
+#import webspeech_key as gt
+import webspeech_key_multi as gt
 import prepro as pp
 import sys
 import re
@@ -9,6 +9,7 @@ import os
 import glob
 import utils as ut
 import argparse as ap
+import time 
 
 DEBUG = ut.get_debug()
 
@@ -65,8 +66,10 @@ def parse_args(fpath=None, idr=None, dbg=None, spath=None, sgdr=None):
             if not os.path.isdir(directory):
                 print "Invalid input directory '{}'".format(directory)
                 raise Exception
-        filepath = ut.dir_path(directory) + fl
-        
+            filepath = ut.dir_path(directory) + fl
+        else:
+            filepath = ut.dir_path(drct) + fl
+            
         if not os.path.exists(filepath):
             print "Input file not found. Filepath is {}".format(filepath)
             raise Exception    
@@ -123,7 +126,9 @@ def transcribe(filepath, sumpath, segdir):
     if DEBUG: print "File length = {}".format(ut.file_length(filepath))     
     
     #Writes all segment files to segdir
+    #print time.time() - start_time, "seconds; starting prepro"
     seg_count = pp.prepro2(filepath, segdir)           
+    #print time.time() - start_time, "seconds; ending prepro"
     
     basefile = ut.base_filename(filepath)       
     if DEBUG: print "basefile is {}".format(basefile)
@@ -131,7 +136,9 @@ def transcribe(filepath, sumpath, segdir):
     sf = open(sumpath, "w")
     #Consider using #while os.path.exists(opath): 
     segfiles = (ut.dir_path(segdir) + basefile + "__" + str(i) + ".flac" for i in range(seg_count))    
+    #print time.time() - start_time, "seconds; starting transcribe"
     trans_list = gt.google_transcribe(segfiles)
+    #print time.time() - start_time, "seconds; ending transcribe"
     if DEBUG: print trans_list
     
     for t in trans_list:
@@ -161,8 +168,13 @@ calls transcribe function
 @ret- list of transcribed lines
 """
 
+start_time = time.time()
+
 def call_transcribe(filepath=None, sumpath=None, segdir=None, indir=None, debug=None):
+    print time.time() - start_time, "seconds; started parse_args"
     filepath, sumpath, segdir = parse_args(fpath=filepath, idr=indir, spath=sumpath, sgdr=segdir, dbg=debug)
+    
+    print time.time() - start_time, "seconds; ended parse_args"
     trans_list = transcribe(filepath, sumpath, segdir)
     return trans_list
 
