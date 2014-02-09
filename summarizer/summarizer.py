@@ -60,7 +60,7 @@ def debug_summarizer():
 
 # Get the transcription from the database
 # Convert it into a list of strings
-def main(post_id, summary_limit_percent):
+def main(post_id, summary_limit_percent, zwords, inv_zwords):
 	client = MongoClient('localhost', 27017)
 	db =  client.ahks_development
 	transcriptions = db.transcriptions
@@ -68,7 +68,7 @@ def main(post_id, summary_limit_percent):
 	transcriptionText = document['text']
 	transcriptionLines = transcriptionText.split("\n")
 	summary_limit_percent = float(summary_limit_percent)
-	return summarize(transcriptionLines, summary_limit_percent, "/home/ubuntu/falcon/summarizer/saved_df.scores")
+	return summarize(transcriptionLines, summary_limit_percent, "/home/ubuntu/falcon/summarizer/saved_df.scores", zwords, inv_zwords)
 
 
 if __name__ == "__main__":
