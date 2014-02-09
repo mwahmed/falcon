@@ -60,8 +60,8 @@ def get_cuewords_zwords_scores(speechTranscriptionLines, zwords, inv_zwords):
 def get_zwords_scores(zwords):
 	global cueword_zword_DS
 	zwords_list = list()
-	if zwords.find(";") != -1:
-		zwords_list = zwords.split(";")
+	if zwords.find(",") != -1:
+		zwords_list = zwords.split(",")
 	else:
 		# if there is only a single zword
 		zwords_list.append(zwords)
@@ -77,8 +77,8 @@ def get_zwords_scores(zwords):
 def handle_inv_zwords(inv_zwords):
 	global cueword_zword_DS
 	inv_zwords_list = list()
-	if inv_zwords.find(";") != -1:
-		inv_zwords_list = inv_zwords.split(";")
+	if inv_zwords.find(",") != -1:
+		inv_zwords_list = inv_zwords.split(",")
 	else:
 		# if there's only a single inv_zword
 		inv_words_list.append(inv_zwords)	
