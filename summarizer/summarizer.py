@@ -74,7 +74,9 @@ def main(post_id, summary_limit_percent, zwords, inv_zwords):
 if __name__ == "__main__":
 	post_id = sys.argv[1]
 	summary_limit_percent = sys.argv[2]
-	summary =  main(post_id, summary_limit_percent)
+	zwords = sys.argv[3]
+	inv_zwords = sys.argv[4]
+	summary =  main(post_id, summary_limit_percent, zwords, inv_zwords)
 	for line in summary:
 		print line
 
