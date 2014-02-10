@@ -60,13 +60,17 @@ def debug_summarizer():
 
 # Get the transcription from the database
 # Convert it into a list of strings
-def main(post_id, summary_limit_percent, zwords, inv_zwords):
+def main(post_id, summary_limit_percent, zwords, inv_zwords, sentence_delimiter):
 	client = MongoClient('localhost', 27017)
 	db =  client.ahks_development
 	transcriptions = db.transcriptions
 	document = transcriptions.find_one({'_id': ObjectId(post_id)})
 	transcriptionText = document['text']
-	transcriptionLines = transcriptionText.split("\n")
+	if sentence_delimiter == "newline":
+		transcriptionLines = transcriptionText.split("\n")
+	else if sentence_delimiter == "fullstop":
+		transcriptionLines = transcriptionText.split(".")
+
 	summary_limit_percent = float(summary_limit_percent)
 	return summarize(transcriptionLines, summary_limit_percent, "/home/ubuntu/falcon/summarizer/saved_df.scores", zwords, inv_zwords)
 
@@ -76,7 +80,8 @@ if __name__ == "__main__":
 	summary_limit_percent = sys.argv[2]
 	zwords = sys.argv[3]
 	inv_zwords = sys.argv[4]
-	summary =  main(post_id, summary_limit_percent, zwords, inv_zwords)
+	sentence_delimiter = sys.argv[5]
+	summary =  main(post_id, summary_limit_percent, zwords, inv_zwords, sentence_delimiter)
 	for line in summary:
 		print line
 
