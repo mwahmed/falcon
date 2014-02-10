@@ -5,6 +5,7 @@ import df as DF
 import math
 import pdb
 from collections import defaultdict
+from operator import itemgetter
 
 '''
 This script calculates the tf (term frequency) for each word in the document
@@ -13,16 +14,17 @@ It uses the code in the df module to caculate the number of occurences of each w
 # Store a list of words that are specific to this document, and do not appear anywhere else 
 doc_specific_words = []
 
-
+# The global var which will store tf-idf values
+tfidf = defaultdict()
 # The speech transcription is passed in as a list of strings
 # The path to the file containing the saved df scores is also passed in as an argument
 # This function also sets doc_specific_words
 def get_tfidf_scores(input_transcription, saved_df_file):
+	global tfidf
 	# stores (sentence_tf_idf_score, sentence_idx) 
 	# returned to the caller
 	summary_sentence_idxs = []
 
-	tfidf = defaultdict()
 	if not input_transcription:
 		print "The transcription passed in to the get_tfidf_summary is empty"
 		sys.exit(1)
@@ -55,7 +57,7 @@ def get_tfidf_scores(input_transcription, saved_df_file):
 	input_transcription_word_len = len(word_list_input_transcription)
 	input_split = set(word_list_input_transcription)
 	input_word_count = len(input_split)
-	total_files = 503
+	total_files = 8269
 	#print "###########################################################################################"
 	#print "REMEMBER TO UPDATE THE total_files variable in tfidf.py everytime you get more tf-idf data"
 	#print "###########################################################################################"
@@ -71,9 +73,9 @@ def get_tfidf_scores(input_transcription, saved_df_file):
 			# DEBUG
 			# print "tfidf[" + word + "]=", tfidf[word], " ------ ", "df[" + word + "]=", freq[word]
 
-		# if df is zero, this word has not been encountered before and so it should be a specific word
+		# if df is zero, this word has not been encountered before and so it should be given tfidf score of 1
 		elif df == 0.0:
-			tfidf[word] = 0.0
+			tfidf[word] = 1.0
 			doc_specific_words.append(word)
 			# DEBUG
 			# print "tfidf[" + word + "]=", tfidf[word], " ------ ", "df[" + word + "]=", freq[word]
@@ -82,8 +84,11 @@ def get_tfidf_scores(input_transcription, saved_df_file):
 	# Store the tf-idf values for each sentence in a list
 	num_sentences = len(list_input_transcription)
 	for idx, sentence in enumerate(list_input_transcription):
-		 sentence_tfidf = sum([tfidf[word] for word in sentence.split(" ") if word not in ignored_words])
-		 summary_sentence_idxs.append((sentence_tfidf, idx))
+		sentence_tfidf = 0.0
+		for word in sentence.split(" "):
+			if word not in ignored_words:
+				sentence_tfidf += tfidf[word]
+		summary_sentence_idxs.append((sentence_tfidf, idx))
 		 	
 	return summary_sentence_idxs
 
@@ -95,3 +100,13 @@ TODO: Make this smarter, uses NLTK POS tagging to get nouns
 '''
 def get_doc_specific_words():
 	return doc_specific_words
+
+
+'''
+Return the top-10 highest scoring words to the user
+'''
+def get_top10_words():
+	tfidf_tuples = tfidf.items()
+	tfidf_tuples = sorted(tfidf_tuples, reverse=True, key = itemgetter(1))
+	top10words = [tup[0] for tup in tfidf_tuples[0:10] ]
+	return top10words
