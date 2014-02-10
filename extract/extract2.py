@@ -4,6 +4,11 @@ import nltk.corpus as nc
 import sys
 import os
 
+from bson.objectid import ObjectId
+from pymongo import MongoClient
+
+DEBUG = 0
+
 #Look for modal auxiliary + baseform, i.e. will eat etc.
 future = re.compile("^(MD|VB)$", re.I )       
 present = re.compile("^(VBG|VBP|VBZ)$", re.I )
@@ -18,31 +23,40 @@ month = re.compile("(january|february|march|april|may|june|july|august|september
 dayProper = re.compile("(monday|tuesday|wednesday|thursday|friday|saturday|sunday)", re.I)
 day = re.compile("(today|tomorrow|yesterday)", re.I)
 time = re.compile("(now|then|O`clock)", re.I) 
-question_re = re.compile("(who|what|when|where|why|how)", re.I)
+question_re = re.compile("^(who|what|when|where|why|how)$", re.I)
 
-def findfirst(tagged, tag, srcidx=1):
+class ptr:
+    def __init__(self, obj): self.obj = obj
+    def get(self):    return self.obj
+    def set(self, obj):      self.obj = obj
+
+"""
+Matches term or regex, and return matching term index or -1
+    if no match
+@params
+    tagged- list of tagged words, 2-tuple
+    tag, "term" or regex obj being matched
+    srcidx, whether to look in first or second
+        element of 2-tuple, in most cases, you
+        want to match the tag(1), but in some cases
+        you may want to match the content
+    exact- exact(True) or substring match(False)
+@ret- (matching term index|-1)
+"""
+def findfirst(tagged, tag, srcidx=1, exact=True):
     if isinstance(tag, str):
         for idx in range(len(tagged)):
-            if tagged[idx][srcidx] == tag:
-                return idx    
+            if exact:
+                if tag == tagged[idx][srcidx]:
+                    return idx
+            else:
+                if tag in tagged[idx][srcidx]:
+                    return idx
     else: #is regular expression
         for idx in range(len(tagged)):
             if tag.search(tagged[idx][srcidx]):
                 return idx     
     return -1 #No match  
-
-def findall(tagged, tag):
-    ret=[]
-    if isinstance(tag, str):
-        for idx in range(len(tagged)):
-            if tagged[idx][1] == tag:
-                ret.append(idx)    
-    else: #is regular expression
-        for idx in range(len(tagged)):
-            if tag.search(tagged[idx][1]):
-                ret.append(idx)     
-    return ret   
-
 
 """
 Finds the phrase that refers to the semantic object in the sentence 
@@ -54,6 +68,12 @@ def object_phrase(tagged):
             return tagged[:i]
     return tagged
 
+"""
+set value of expression, i.e. exprval to idx[0]
+"""
+def set_and_cond(idx, exprval):
+    idx.set(exprval)
+    return exprval
 
 """
 Returns list of list of tuples of words conforming to pattern
@@ -78,7 +98,7 @@ def future_deliverable(tagged):
                     obj = object_phrase(tagged[verbidx+1:])
                     if obj:
                         match.append(obj)
-                        print "obj is {}".format(obj)
+                        if DEBUG: print "obj is {}".format(obj)
                                     
         except IndexError:
             print "IndexError"
@@ -90,22 +110,30 @@ def future_deliverable(tagged):
 Subject Verb (I am sitting) is typically a statment
 Inversion (Am I ...) is typically question
 """
-#TODO: Finish
+"""
+Parses sentences based on increasingly selective rules
+"""
 def question(tagged):
-    #print tagged
-    ret = [] #list of all questions in this line
-    mdidx = findfirst(tagged, "MD")
-    if mdidx != -1:
-        i = mdidx
+    ret = [] 
+    idx = ptr(0)  
+    #Check if sentence has question mark
+    #will work best for manually transcribed text 
+    if set_and_cond(idx, findfirst(tagged, "?", srcidx=0, exact=False)) != -1:
+        ret.append(tagged)
+    
+    #Search for question indicating words    
+    elif set_and_cond(idx, findfirst(tagged, question_re, srcidx=0)) != -1:        
+        i = idx.get()
+        i = findfirst(tagged[i+1:i+2], verb)
+        if i != -1:
+            ret.append(tagged[i:])
+    #Matches questions of the form <should we go ahead
+    elif set_and_cond(idx, findfirst(tagged, "MD")) != -1:
+        i = idx.get()
         if pronoun.search(tagged[i+1][1]) or noun.search(tagged[i+1][1]):
                 ret.append(tagged[i:i+2])
-    else:
-        qidx = findfirst(tagged, question_re, srcidx=0)
-        if qidx != -1:
-            ret.append(tagged[qidx:])
-    
     return ret
-
+    
 def current_deliverables(tagged):
     match_present = []
     tmp = []
@@ -125,19 +153,20 @@ def current_deliverables(tagged):
                 #    tmp.append(ret)
         except Exception:
             pass
-        if tmp: match_present.append(tmp)
+        if tmp and len(tmp) > 1: match_present.append(tmp)
     return match_present
 
 
 def changeFormat(sent):
-    if isinstance(sent, str):
+    if isinstance(sent, basestring):
         return sent.split(" ")
     elif isinstance(sent, list):
         if len(sent)>0:
-            if instance(sent[0], str):
+            if isinstance(sent[0], basestring):
                 return sent
     else:
         print "Unknown format"
+    
 
 def deliverables(sent):
     
@@ -145,33 +174,72 @@ def deliverables(sent):
     tagged=n.pos_tag( sent ) #sent should be a list of words
 
     match_future=future_deliverable(tagged)
-    #if match_future: return match_future
-    match_question=questions(tagged)
-    #if match_question: return match_question 
+    if match_future: return match_future
+    match_question=question(tagged)
+    if match_question: return match_question 
     match_present = current_deliverables(tagged)
-    #if match_present: return match_present
+    if match_present: return match_present
     
     return {"future":match_future, "question":match_question, "present":match_present} 
 
-def extract(sents):
+"""
+Extracts for a list of sents
+params-
+    sents is a list of list of strings
+    i.e. a list of sentences, where each
+    sentence is a list of words
+"""
+def extract(sents, tasktype,  pr=False, ):
     ret = []
     for s in sents:
-        ret.append(deliverables(s))
+        try:
+            r = deliverables(s)[tasktype]
+            if r:
+                ret.append(r)
+                if pr:            
+                    if isinstance(s, basestring):
+                        print "Sentence is: {}".format("".join(s))
+                    elif isinstance(s, list):
+                        print "Sentence is: {}".format(" ".join(s))
+                    print "Ret is: {}\n".format(r)
+        except UnicodeEncodeError:
+            pass
+        except IndexError:
+            pass
+
     return ret
-    
-if __name__ == "__main__":
-    
+
+def euro():
     europarl = nc.util.LazyCorpusLoader('europarl_raw/english', n.corpus.EuroparlCorpusReader, r'ep-.*\.en', encoding='utf-8')     
     fileid = europarl.fileids()[0]
     sents = europarl.sents(fileid)
+    return sents
     
-    
-    for s in sents[15:30]:
-        #TODO: If s is a line and not a sentence
-        #Use other features to delineate sentences
+if __name__ == "__main__":
+    if len(sys.argv) > 0:
+        postid = sys.argv[1]
+        tasktype = sys.argv[2] #"present", "future"
         
-        ret = deliverables(s)
-        if ret:
-            print "Sentence is: {}".format(" ".join(s))
-            print "Ret is: {}\n".format(ret)
-
+        client = MongoClient('localhost', 27017)
+        db =  client.ahks_development
+        transcriptions = db.transcriptions
+        document = transcriptions.find_one({'_id': ObjectId(post_id)})
+        transcriptionText = document['text']
+        sents = transcriptionText.split("\n")
+        
+        ret = extract(sents, tasktype)
+        for line in ret:
+                print line
+    else:
+        sents = euro()
+        for s in sents:
+            #TODO: If s is a line and not a sentence
+            #Use other features to delineate sentences
+            #print "Sentence is: {}".format(s, " ".join(s))
+            try:
+                ret = deliverables(s)
+                if ret:
+                    print "Sentence is: {}".format(" ".join(s))
+                    print "Ret is: {}\n".format(ret)
+            except UnicodeEncodeError:
+                pass
