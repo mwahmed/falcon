@@ -16,11 +16,18 @@ doc_specific_words = []
 
 # The global var which will store tf-idf values
 tfidf = defaultdict()
+
+# The total number of files used to get list of tf-idf words
+total_files = 8269
+
 # The speech transcription is passed in as a list of strings
 # The path to the file containing the saved df scores is also passed in as an argument
 # This function also sets doc_specific_words
+
 def get_tfidf_scores(input_transcription, saved_df_file):
 	global tfidf
+	global total_files
+
 	# stores (sentence_tf_idf_score, sentence_idx) 
 	# returned to the caller
 	summary_sentence_idxs = []
@@ -52,17 +59,37 @@ def get_tfidf_scores(input_transcription, saved_df_file):
 			if word not in ignored_words:
 				word_list_input_transcription.append(word)
 	
+	# Store the tfidf values for the transcription's words in the tfidf dictionary
+	calculate_word_tfidf_scores(word_list_input_transcription, saved_df_file)
+
+	# Store the tf-idf values for each sentence in a list
+	num_sentences = len(list_input_transcription)
+	for idx, sentence in enumerate(list_input_transcription):
+		#sentence_tfidf_variance = get_sentence_tfidf_variance(sentence, ignored_words)
+		#sentence_tfidf_total = get_sentence_tfidf_total(sentence, ignored_words)
+		sentence_top_tfidf_variance = get_sentence_tfidf_variance_and_topThirdWords(sentence, ignored_words)
+		summary_sentence_idxs.append((sentence_top_tfidf_variance, idx))
+		 	
+	return summary_sentence_idxs
+
+
+# Calculate the tfidf score of each word in the transcription using the saved_df file
+# Write these values into the global tfidf Dictionary
+def calculate_word_tfidf_scores(word_list_input_transcription, saved_df_file):
+
+	global tfidf
+	global doc_specific_words
+	# REMEMBER TO UPDATE this total_files variable everytime you get more tf-idf data
+	global total_files
+
+	input_transcription_word_len = len(word_list_input_transcription)
+	# Creates a set, i.e. repeated words appear only once in this data structure
+	input_transcription_word_set = set(word_list_input_transcription)
+	input_word_count = len(input_transcription_word_set)
 
 	freq = DF.read_df_vals_into_dict(saved_df_file)
-	input_transcription_word_len = len(word_list_input_transcription)
-	input_split = set(word_list_input_transcription)
-	input_word_count = len(input_split)
-	total_files = 8269
-	#print "###########################################################################################"
-	#print "REMEMBER TO UPDATE THE total_files variable in tfidf.py everytime you get more tf-idf data"
-	#print "###########################################################################################"
 
-	for word in input_split:
+	for word in input_transcription_word_set:
 		tf = float(word_list_input_transcription.count(word))/input_transcription_word_len
 		# DEBUG
 		# print "tf[" + word + "]=", tf
@@ -81,17 +108,70 @@ def get_tfidf_scores(input_transcription, saved_df_file):
 			# print "tfidf[" + word + "]=", tfidf[word], " ------ ", "df[" + word + "]=", freq[word]
 
 
-	# Store the tf-idf values for each sentence in a list
-	num_sentences = len(list_input_transcription)
-	for idx, sentence in enumerate(list_input_transcription):
-		sentence_tfidf = 0.0
-		for word in sentence.split(" "):
-			if word not in ignored_words:
-				sentence_tfidf += tfidf[word]
-		summary_sentence_idxs.append((sentence_tfidf, idx))
-		 	
-	return summary_sentence_idxs
+# Calculate the total tfidf score for each sentence
+def get_sentence_tfidf_total(sentence, ignored_words):
+	global tfidf
+	sentence_tfidf = 0.0
+	for word in sentence.split(" "):
+		if word not in ignored_words:
+			sentence_tfidf += tfidf[word]
+	
+	return sentence_tfidf		
 
+# Calculate the tfidf variance score for each sentence
+def get_sentence_tfidf_variance(sentence, ignored_words):
+	global tfidf
+	sentence_tfidf = 0.0
+	sentence_tfidf_variance = 0.0
+	sentence_length = 0
+	for word in sentence.split(" "):
+		if word not in ignored_words:
+			sentence_tfidf += tfidf[word]
+			sentence_length += 1
+
+
+	sentence_tfidf_avg = sentence_tfidf / sentence_length
+	for word in sentence.split(" "):
+		if word not in ignored_words:
+			sentence_tfidf_variance += abs(sentence_tfidf_avg - tfidf[word])
+
+	#sentence_tfidf_variance /= sentence_length
+	return ( ( 0.25 * sentence_tfidf_variance) + (0.75 * sentence_tfidf) )		
+
+
+# Calculate the tfidf variance score for each sentence
+# Also calculate the avg of the top "n" % of words in each sentence
+def get_sentence_tfidf_variance_and_topThirdWords(sentence, ignored_words):
+	if sentence == "":
+		return 0.0
+	global tfidf
+	word_tfidf_scores = list()
+	sentence_tfidf_variance = 0.0
+	sentence_tfidf_avg = 0.0
+	sentence_length = 0
+	for word in sentence.split(" "):
+		if word not in ignored_words:
+			word_tfidf_scores.append(tfidf[word])
+			sentence_tfidf_avg += tfidf[word]
+			sentence_length += 1
+
+
+	word_tfidf_scores.sort(reverse = True)
+
+	topWordThreshold = int(0.33 * sentence_length)
+	if topWordThreshold >= sentence_length:
+		print "Something's wrong, sentence_length=" + str(sentence_length) + "Top Word Threshold=" + str(topWordThreshold)
+		pdb.set_trace()
+	
+	sentence_tfidf = sum(word_tfidf_scores[:(topWordThreshold + 1)])
+	sentence_tfidf_avg /= sentence_length
+
+	for word in sentence.split(" "):
+		if word not in ignored_words:
+			sentence_tfidf_variance += abs(sentence_tfidf_avg - tfidf[word])
+
+	#sentence_tfidf_variance /= sentence_length
+	return ( ( -1.0 * 0.25 * sentence_tfidf_variance) + (1.00 * sentence_tfidf) )		
 
 
 '''

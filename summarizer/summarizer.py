@@ -4,7 +4,7 @@ import pdb
 import sys
 from bson.objectid import ObjectId
 from pymongo import MongoClient
-
+import parser
 
 # Global variable used for debugging
 debug_sentence_score = list()
@@ -49,9 +49,9 @@ def summarize(transcriptionLines, summary_limit_percent, saved_df_file_path, zwo
 	for score, idx in combined_summary_scores:
 		debug_sentence_score.append((transcriptionLines[idx], score))
 	summary_idxs.sort()
-	summary = [transcriptionLines[idx] for idx in summary_idxs]
+	#summary = [transcriptionLines[idx] for idx in summary_idxs]
 	
-	return summary
+	return summary_idxs
 
 def debug_summarizer():
 	global debug_sentence_score
@@ -66,13 +66,22 @@ def main(post_id, summary_limit_percent, zwords, inv_zwords, sentence_delimiter)
 	transcriptions = db.transcriptions
 	document = transcriptions.find_one({'_id': ObjectId(post_id)})
 	transcriptionText = document['text']
+	
 	if sentence_delimiter == "newline":
 		transcriptionLines = transcriptionText.split("\n")
-	else if sentence_delimiter == "fullstop":
-		transcriptionLines = transcriptionText.split(".")
+	elif sentence_delimiter == "fullstop":
+		# parsed_transcription_string breaks the string into a list of lines
+		transcriptionLines = parser.parsed_transcription_string(transcriptionText)
 
 	summary_limit_percent = float(summary_limit_percent)
-	return summarize(transcriptionLines, summary_limit_percent, "/home/ubuntu/falcon/summarizer/saved_df.scores", zwords, inv_zwords)
+	#return summarize(transcriptionLines, summary_limit_percent, "/home/ubuntu/falcon/summarizer/saved_df.scores", zwords, inv_zwords)
+	#return summarize(transcriptionLines, summary_limit_percent, "saved_df.scores", zwords, inv_zwords)
+	summary_idxs = summarize(transcriptionLines, summary_limit_percent, "saved_df.scores", zwords, inv_zwords)
+	summary = list()
+	for summary_idx in summary_idxs:
+		summary.append(transcriptionLines[summary_idx])
+
+	return summary
 
 
 if __name__ == "__main__":

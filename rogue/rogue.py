@@ -76,8 +76,8 @@ def similarity(machine, human_unparsed):
     human_unparsed.sort()
     human = []
     for line in human_unparsed:
-        line = line.replace(",", "")
-        line = line.replace("-", " ")
+        #line = line.replace(",", "")
+        #line = line.replace("-", " ")
         human.append(line)
     
     #The non-normalized score
