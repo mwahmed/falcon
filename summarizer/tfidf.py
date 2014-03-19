@@ -161,7 +161,9 @@ def get_sentence_tfidf_variance_and_topThirdWords(sentence, ignored_words):
 	topWordThreshold = int(0.33 * sentence_length)
 	if topWordThreshold >= sentence_length:
 		print "Something's wrong, sentence_length=" + str(sentence_length) + "Top Word Threshold=" + str(topWordThreshold)
-		pdb.set_trace()
+		print "Sentence is:", sentence
+		return 0.0
+		#pdb.set_trace()
 	
 	sentence_tfidf = sum(word_tfidf_scores[:(topWordThreshold + 1)])
 	sentence_tfidf_avg /= sentence_length
