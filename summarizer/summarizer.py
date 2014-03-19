@@ -5,10 +5,14 @@ import sys
 from bson.objectid import ObjectId
 from pymongo import MongoClient
 import parser
+import re
 
 # Global variable used for debugging
 debug_sentence_score = list()
 
+
+# Debug flag
+debug = 1
 '''
 Take the transcription and summary size ( as % of total sentences ) as input,
 call the tfidf module and the cuewords module passing in the respective limits to each 
@@ -26,6 +30,10 @@ def summarize(transcriptionLines, summary_limit_percent, saved_df_file_path, zwo
 	summary_limit_abs = int(summary_limit_percent/100.0 * linecount)
 	# Note that cuewords and zwords are calculated together, so this function returns the 
 	# cueword and the zword scores
+	transcriptionLinesCopy = list()
+	for line in transcriptionLines:
+		transcriptionLinesCopy.append(re.sub("[.?!,;]", "", line))
+	transcriptionLines = transcriptionLinesCopy
 	cueword_zword_sentence_scores_idxs = cuewords.get_cuewords_zwords_scores(transcriptionLines, zwords, inv_zwords)
 	tfidf_sentence_scores_idxs = tfidf.get_tfidf_scores(transcriptionLines, saved_df_file_path)
 	combined_summary_scores = list()
@@ -60,23 +68,32 @@ def debug_summarizer():
 
 # Get the transcription from the database
 # Convert it into a list of strings
-def main(post_id, summary_limit_percent, zwords, inv_zwords, sentence_delimiter):
+def main(post_id, summary_limit_percent, zwords, inv_zwords, sentence_delimiter, dbName):
 	client = MongoClient('localhost', 27017)
 	db =  client.ahks_development
-	transcriptions = db.transcriptions
-	document = transcriptions.find_one({'_id': ObjectId(post_id)})
-	transcriptionText = document['text']
-	
+	# Databases for storing audio transcripts and text are differnt
+	if dbName == "transcriptions":
+		userInputData = db.transcriptions
+	elif dbName == "documents":
+		userInputData = db.documents
+
+	# Databases for storing audio transcripts and text are differnt
+	document = userInputData.find_one({'_id': ObjectId(post_id)})
+	if dbName == "transcriptions":
+		transcriptionText = document['text']
+	elif dbName == "documents":
+		transcriptionText = document['data']
+		
 	if sentence_delimiter == "newline":
 		transcriptionLines = transcriptionText.split("\n")
-	elif sentence_delimiter == "fullstop":
+	else:
 		# parsed_transcription_string breaks the string into a list of lines
-		transcriptionLines = parser.parsed_transcription_string(transcriptionText)
-
+		transcriptionLines = parser.parse_transcription_string(transcriptionText)
+		#transcriptipnLines = transcriptionText.split(". ")
+	
 	summary_limit_percent = float(summary_limit_percent)
-	#return summarize(transcriptionLines, summary_limit_percent, "/home/ubuntu/falcon/summarizer/saved_df.scores", zwords, inv_zwords)
-	#return summarize(transcriptionLines, summary_limit_percent, "saved_df.scores", zwords, inv_zwords)
-	summary_idxs = summarize(transcriptionLines, summary_limit_percent, "saved_df.scores", zwords, inv_zwords)
+	summary_idxs = summarize(transcriptionLines, summary_limit_percent, "/home/ubuntu/falcon/summarizer/saved_df.scores", zwords, inv_zwords)
+	#summary_idxs = summarize(transcriptionLines, summary_limit_percent, "saved_df.scores", zwords, inv_zwords)
 	summary = list()
 	for summary_idx in summary_idxs:
 		summary.append(transcriptionLines[summary_idx])
@@ -90,7 +107,8 @@ if __name__ == "__main__":
 	zwords = sys.argv[3]
 	inv_zwords = sys.argv[4]
 	sentence_delimiter = sys.argv[5]
-	summary =  main(post_id, summary_limit_percent, zwords, inv_zwords, sentence_delimiter)
+	dbName = sys.argv[6]
+	summary =  main(post_id, summary_limit_percent, zwords, inv_zwords, sentence_delimiter, dbName)
 	for line in summary:
 		print line
 
