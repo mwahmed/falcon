@@ -32,8 +32,9 @@ def main(postId, dbName, resp):
     for sent in trans:
         ret = extract.deliverables(sent, respCode)
         if ret:
-            print "{}++++{}".format(sent, ret)
-            print ";;;spandan;;;"
+            tmp = " ".join(map(lambda x:str(x), map(lambda x:x[0],  ret[0][0]) ) )
+            print "{}++++{}".format(sent, tmp)
+            print ";;;spanedan;;;"
             
 
 
