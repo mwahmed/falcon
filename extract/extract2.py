@@ -167,12 +167,27 @@ def changeFormat(sent):
     else:
         print "Unknown format"
     
-
-def deliverables(sent):
+"""
+resp = (p|f|q) ; present, future, question
+"""
+def deliverables(sent, resp=None):
     
     sent = changeFormat(sent)
     tagged=n.pos_tag( sent ) #sent should be a list of words
 
+    ret = None
+    if resp == "f": 
+        ret=future_deliverable(tagged)
+    elif resp == "p":
+        ret = current_deliverables(tagged)
+    elif resp == "p":
+        ret = question(tagged)
+    else:
+        pass
+    
+    return ret
+    
+    """
     match_future=future_deliverable(tagged)
     if match_future: return match_future
     match_question=question(tagged)
@@ -180,7 +195,9 @@ def deliverables(sent):
     match_present = current_deliverables(tagged)
     if match_present: return match_present
     
-    return {"future":match_future, "question":match_question, "present":match_present} 
+    return {"future":match_future, "question":match_question, "present":match_present}
+    """
+    
 
 """
 Extracts for a list of sents
