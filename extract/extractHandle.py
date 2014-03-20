@@ -32,7 +32,10 @@ def main(postId, dbName, resp):
     for sent in trans:
         ret = extract.deliverables(sent, respCode)
         if ret:
-            print sent
+            print "{}++++{}".format(sent, ret)
+            print ";;;spandan;;;"
+            
+
 
 
 if __name__ == "__main__":
