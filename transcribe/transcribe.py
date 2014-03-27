@@ -10,7 +10,14 @@ import glob
 import utils as ut
 import argparse as ap
 import time 
-
+import requests
+import pymongo
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+t_id = sys.argv[2]
+client = MongoClient()
+db = client.ahks_development
+transcriptions = db.transcriptions
 DEBUG = ut.get_debug()
 
 """
@@ -29,12 +36,14 @@ Parses command line args and returns
 @ret= List of paths to input file,
     output summary file, and segment directory
 """
-def parse_args(fpath=None, idr=None, dbg=None, spath=None, sgdr=None):    
+def parse_args(fpath=None, trans_id=None, idr=None, dbg=None, spath=None, sgdr=None):    
     global DEBUG
     parser = ap.ArgumentParser()
     
     if not fpath:
         parser.add_argument("filepath", help="path to input audio file")
+    if not trans_id:
+        parser.add_argument("trans_id", help="id in the database")
     if not idr:
         parser.add_argument("-i", "--indir", help="directory containing input audio file, if filepath does not contain path")
     if not dbg:
@@ -140,9 +149,10 @@ def transcribe(filepath, sumpath, segdir):
     trans_list = gt.google_transcribe(segfiles)
     #print time.time() - start_time, "seconds; ending transcribe"
     if DEBUG: print trans_list
-    
+    db_data = ""
     for t in trans_list:
         sf.write(t + "\n")
+	db_data += str(t) + "\n"
     """
     for seg in segfiles:     
         if DEBUG: print "segment path is {}".format(seg)
@@ -154,7 +164,7 @@ def transcribe(filepath, sumpath, segdir):
     sf.close()
     ut.remove_seg_files(segdir, basefile + "__*.flac")
     #Trans_list is a list of lines that are transcribed
-    return trans_list
+    return db_data
 """
 calls transcribe function
 @params
@@ -176,6 +186,8 @@ def call_transcribe(filepath=None, sumpath=None, segdir=None, indir=None, debug=
     
     print time.time() - start_time, "seconds; ended parse_args"
     trans_list = transcribe(filepath, sumpath, segdir)
+    payload = {'id': t_id, 'text':trans_list}
+    r = requests.post("http://localhost:3000/update_transcription", data=payload)
     return trans_list
 
 if __name__ == "__main__":      
