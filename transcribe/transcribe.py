@@ -187,7 +187,7 @@ def call_transcribe(filepath=None, sumpath=None, segdir=None, indir=None, debug=
     print time.time() - start_time, "seconds; ended parse_args"
     trans_list = transcribe(filepath, sumpath, segdir)
     payload = {'id': t_id, 'text':trans_list}
-    r = requests.post("http://localhost:3000/update_transcription", data=payload)
+    r = requests.post("https://localhost:3000/update_transcription", data=payload,verify=False)
     return trans_list
 
 if __name__ == "__main__":      
