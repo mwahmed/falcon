@@ -172,7 +172,7 @@ def get_sentence_tfidf_variance_and_topThirdWords(sentence, ignored_words):
 		if word not in ignored_words:
 			sentence_tfidf_variance += abs(sentence_tfidf_avg - tfidf[word])
 
-	#sentence_tfidf_variance /= sentence_length
+	sentence_tfidf_variance /= sentence_length
 	return ( ( -1.0 * 0.25 * sentence_tfidf_variance) + (1.00 * sentence_tfidf) )		
 
 

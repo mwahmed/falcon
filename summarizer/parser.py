@@ -72,7 +72,7 @@ def parse_transcription_string(transcription):
 		else:
 			parsed_transcription_lines.append(line)
 
-	#print "####################i#########################3#########################"
+	#Print "####################i#########################3#########################"
 	#print parsed_transcription_lines
 	#print "#######################################################################" 	
 	return parsed_transcription_lines
