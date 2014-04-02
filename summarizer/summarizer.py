@@ -66,6 +66,44 @@ def debug_summarizer():
 	for line in debug_sentence_score:
 		print line
 
+'''
+These lines were copied from the parser function. 
+Only the functionality to split the lines is used here
+'''
+def splitTextIntoLines(transcriptionText):
+	parsed_transcription = transcriptionText.replace("\n", " ")
+	
+	#convert acronyms like U.S. to US
+	parsed_transcription = re.sub("([A-Z])\.", "\\1", parsed_transcription)
+	
+	# remove "..." and replace them with a space
+	parsed_transcription = re.sub("\.[\.]+", " ", parsed_transcription)
+
+	# Remove full stops and other sentence delineators, a space follows
+	parsed_transcription = re.sub("[\.\?\!][ ]+", "\n", parsed_transcription)
+	
+	# Handle sentences that are separated by a ./?/! but no space
+	parsed_transcription = re.sub("([a-z0-9])[\.\?\!]([A-Z])", "\\1\n\\2", parsed_transcription)
+
+	parsed_transcription_lines_copy = parsed_transcription.split("\n")
+	parsed_transcription_lines = list()
+	
+	for line in parsed_transcription_lines_copy:
+		if line != "":
+			if line[0] == " ":
+				line = line[1:]
+
+			if line[-1] == "."  or line[-1] == "?" or line[-1] == "!":
+				parsed_transcription_lines.append(line[:-1] + "\n")
+		 	else:
+				parsed_transcription_lines.append(line + "\n")
+	
+	#Print "####################i#########################3#########################"
+	#print parsed_transcription_lines
+	#print "#######################################################################" 	
+	return parsed_transcription_lines
+
+
 # Get the transcription from the database
 # Convert it into a list of strings
 def main(post_id, summary_limit_percent, zwords, inv_zwords, sentence_delimiter, dbName):
@@ -83,23 +121,28 @@ def main(post_id, summary_limit_percent, zwords, inv_zwords, sentence_delimiter,
 		transcriptionText = document['text']
 	elif dbName == "documents":
 		transcriptionText = document['data']
-		
+	
+	# Unparsed transcription lines, to be displayed to the user
+	transcriptionLines = list()
+
 	if sentence_delimiter == "newline":
 		transcriptionLines = transcriptionText.split("\n")
+
 	else:
-		# parsed_transcription_string breaks the string into a list of lines
+		# parsed_transcription_string parses the input so that the summarizer can calculate word scores easily
 		transcriptionLines = parser.parse_transcription_string(transcriptionText)
-		#transcriptipnLines = transcriptionText.split(". ")
 	
 	summary_limit_percent = float(summary_limit_percent)
 	summary_idxs = summarize(transcriptionLines, summary_limit_percent, "/home/ubuntu/falcon/summarizer/saved_df.scores", zwords, inv_zwords)
 	#summary_idxs = summarize(transcriptionLines, summary_limit_percent, "saved_df.scores", zwords, inv_zwords)
 	summary = list()
 	for summary_idx in summary_idxs:
-		summary.append(transcriptionLines[summary_idx])
-
+		line = transcriptionLines[summary_idx]
+		if line.find("{[") != -1:
+			line = line.replace("{[", ".")
+		summary.append(line)
+	
 	return summary
-
 
 if __name__ == "__main__":
 	post_id = sys.argv[1]
@@ -115,6 +158,6 @@ if __name__ == "__main__":
 	# delimiter between output
 	print ";;;ayush;;;"
 	# 	
-	top10words = tfidf.get_top10_words()
-	for word in top10words:
+	topwords = tfidf.get_topN_words()
+	for word in topwords:
 		print word

@@ -104,8 +104,8 @@ def calculate_sentence_variance_and_topWords_score(sentence):
 # speechTranscriptionLines is the transcript, stored as a list of strings
 def get_cuewords_zwords_scores(speechTranscriptionLines, zwords, inv_zwords):
 	global debug
-	#populate_cueword_DS("/Users/ayushkulkarni/Documents/4S/ECE496/falcon/summarizer/cuewords.txt")
-	populate_cueword_DS("/home/ubuntu/falcon/summarizer/cuewords.txt")
+	populate_cueword_DS("/Users/ayushkulkarni/Documents/4S/ECE496/falcon/summarizer/cuewords.txt")
+	#populate_cueword_DS("/home/ubuntu/falcon/summarizer/cuewords.txt")
 	if zwords != "":
 		if debug != 0:
 			print "Getting Zwords scores for zwords:" + zwords

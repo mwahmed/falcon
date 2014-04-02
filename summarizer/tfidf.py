@@ -94,6 +94,15 @@ def calculate_word_tfidf_scores(word_list_input_transcription, saved_df_file):
 		# DEBUG
 		# print "tf[" + word + "]=", tf
 		# pdb.set_trace()
+
+		# Numbers would represent some importance, so assign score of 0.5
+		if word.replace(".", "").isdigit():
+			freq[word] = 0.5
+
+		# Abbrvs like U.S. are converted to U{[S{[, to assign score of 0.5
+		if word.find("{[") != -1:
+			freq[word] = 0.5
+
 		df = float(freq[word])
 		if df > 0.0:
 			tfidf[word] = tf * math.log10(total_files/df)
@@ -185,10 +194,34 @@ def get_doc_specific_words():
 
 
 '''
-Return the top-10 highest scoring words to the user
+Return the top-N highest scoring words to the user
 '''
-def get_top10_words():
+def get_topN_words():
 	tfidf_tuples = tfidf.items()
+
+	tfidf_tuples = sorted(tfidf_tuples, key = itemgetter(0)) # alphabetical sort
 	tfidf_tuples = sorted(tfidf_tuples, reverse=True, key = itemgetter(1))
-	top10words = [tup[0] for tup in tfidf_tuples[0:10] ]
-	return top10words
+
+	# TODAY's changes
+	#for word in tfidf_tuples:
+	#       print word
+
+	count = 0
+	topScore = tfidf_tuples[0][1]
+	topNwords = set()
+	for tup in tfidf_tuples:
+		score = tup[1]
+		if score >= 0.9 * topScore:
+			str1 = tup[0].replace("{[", ".") # re-convert abbrv
+			# only want to include alphabet strings as top words, or words including apostrophes
+        	if str1.replace("'", "").isalpha():
+        		# don't want for eg, obama and obama's to both be in top words
+        		aposIdx = str1.find("'")
+        		if aposIdx != -1:
+        			topNwords.add(str1[:aposIdx])
+        		else:
+        			topNwords.add(str1)	 		
+		else:
+			break
+
+	return list(topNwords)

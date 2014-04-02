@@ -11,67 +11,63 @@ def handlePhrases(parsed_transcription_lines):
 
 
 # transcript is a string
-# This method is used in testing
+# This method is only used in testing
 def parse_transcription(filepath):
 	# read the text input
-	transcriptFile = sys.argv[1]
-	fr = open(transcriptFile, "r")
+	fr = open(filepath, "r")
 	transcription = fr.read()
 	fr.close();
-	parsed_transcription = parse_transcription_string(transcription)
-	
-	'''fw = open(filepath, "w")
+	parsed_transcription_lines = parse_transcription_string(transcription)
+	return parsed_transcription_lines
+
+
+def write_parsed_transcription(parsed_transcription_lines, filepath):
+	fw = open(filepath, "w")
 	lastLineIdx = len(parsed_transcription_lines)
 	for idx, line in enumerate(parsed_transcription_lines):
-		if (line != "" and line != None):
-			if (line[0] == " "):
-				line = line[1:]
 			if idx < lastLineIdx:
-				fw.write(line + "\n")
-	fw.close()	
-	'''
-	return parsed_transcription
+				fw.write(line)
+	fw.close()
 
 # This method is called in the actual summarizer module
 # The argument "transcription" is a string
 def parse_transcription_string(transcription):
 	parsed_transcription = transcription.replace("\n", " ")
 	
-	parsed_transcription = re.sub("[\"]", "", parsed_transcription)
+	# remove characters like [",:]
+	parsed_transcription = re.sub("[\",:]", "", parsed_transcription)
 
-	# TODAY's changes
-	#parsed_transcription = re.sub("([A-Z])[\.]", "\\1", parsed_transcription)
-	#print "###################################################################"
-	#print parsed_transcription 
-	#print "###################################################################"
+	# separate words like de-escalation into de escalation to prevent the score from being too high
+	parsed_transcription = re.sub("[-]", " ", parsed_transcription)	
 
+	#convert acronyms like U.S. to U{[S{[ to assign tf-idf score aptly
+	parsed_transcription = re.sub("([A-Z])\.", "\\1{[", parsed_transcription)
+	
 	# remove "..." and replace them with a space
 	parsed_transcription = re.sub("\.[\.]+", " ", parsed_transcription)
 
-	# handle decimal points carefully
-	parsed_transcription = re.sub("([0-9\"]+)[\.]([^0-9])", "\\1\n\\2", parsed_transcription)
-
 	# parsed_transcription = re.sub("([a-z]+)[\.]", "\\1\n", parsed_transcription)
 
-	# Remove full stops and other sentence delineators
-	# parsed_transcription = re.sub("[.?!] ", "\n", parsed_transcription)
-	# Handle sentences that are separated by a full-stop and a space, 
-	#parsed_transcription = re.sub("[\.\?\!][ ]+([A-Z])", "\n\\1", parsed_transcription)
+	# Remove full stops and other sentence delineators, a space follows
 	parsed_transcription = re.sub("[\.\?\!][ ]+", "\n", parsed_transcription)
-	# Handle sentences that are separated by a full-stop but no space
-	parsed_transcription = re.sub("([a-zA-Z])[\.\?\!]([A-Z][^\.^\n])", "\\1\n\\2", parsed_transcription)
-	
-	# TODAY's changes
+	# Handle sentences that are separated by a ./?/! but no space
+	#parsed_transcription = re.sub("([a-z0-9])[\.\?\!]([A-Z][^\.^\n])", "\\1\n\\2", parsed_transcription)
+	parsed_transcription = re.sub("([a-z0-9])[\.\?\!]([A-Z])", "\\1\n\\2", parsed_transcription)
+
 	parsed_transcription_lines_copy = parsed_transcription.split("\n")
 	#parsed_transcription_lines_copy = parsed_transcription.split("\r")
 	parsed_transcription_lines = list()
-
+	
 	for line in parsed_transcription_lines_copy:
-		if line[-1] == "."  or line[-1] == "?" or line[-1] == "!":
-			parsed_transcription_lines.append(line[:-1])
-		else:
-			parsed_transcription_lines.append(line)
+		if line != "":
+			if line[0] == " ":
+				line = line[1:]
 
+			if line[-1] == "."  or line[-1] == "?" or line[-1] == "!":
+				parsed_transcription_lines.append(line[:-1])
+		 	else:
+				parsed_transcription_lines.append(line)
+	
 	#Print "####################i#########################3#########################"
 	#print parsed_transcription_lines
 	#print "#######################################################################" 	
