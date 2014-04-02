@@ -12,7 +12,7 @@ debug_sentence_score = list()
 
 
 # Debug flag
-debug = 1
+debug = 0
 '''
 Take the transcription and summary size ( as % of total sentences ) as input,
 call the tfidf module and the cuewords module passing in the respective limits to each 
