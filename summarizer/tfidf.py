@@ -214,13 +214,13 @@ def get_topN_words():
 		if score >= 0.9 * topScore:
 			str1 = tup[0].replace("{[", ".") # re-convert abbrv
 			# only want to include alphabet strings as top words, or words including apostrophes
-        	if str1.replace("'", "").isalpha():
-        		# don't want for eg, obama and obama's to both be in top words
-        		aposIdx = str1.find("'")
-        		if aposIdx != -1:
-        			topNwords.add(str1[:aposIdx])
-        		else:
-        			topNwords.add(str1)	 		
+        		if str1.replace("'", "").isalpha():
+        			# don't want for eg, obama and obama's to both be in top words
+        			aposIdx = str1.find("'")
+        			if aposIdx != -1:
+        				topNwords.add(str1[:aposIdx])
+        			else:
+        				topNwords.add(str1)	 		
 		else:
 			break
 
